@@ -50,6 +50,7 @@ function renderEntry(f) {
       ${ty === 'lend' ? field('Give back by (optional)', `<input type="date" name="dueDate" value="${esc(f.dueDate || '')}">`) : field('Note', `<input name="note" value="${esc(f.note || '')}" placeholder="optional">`)}
     </div>
     ${ty === 'lend' ? `<div style="margin-top:12px">${field('Note', `<input name="note" value="${esc(f.note || '')}" placeholder="optional">`)}</div>` : ''}
+    ${editing ? '' : `<label class="switch-row" style="margin-top:8px"><span>${ic('bolt', 'sm')} Also add as a quick button on Home</span><input type="checkbox" name="asQuick"></label>`}
     <div class="sheet-actions">
       ${editing ? '' : `<button type="button" class="btn tonal" id="ef-more">Save & add another</button>`}
       <button class="btn filled" type="submit">${ic('check')}Save</button>
@@ -106,7 +107,9 @@ function submitEntry(f, form, again) {
   }
   save('txns', doc);
   lsSet(LS.last, { accountId: doc.accountId, forWhom: doc.forWhom || lsGet(LS.last, {}).forWhom });
-  snack(f.id ? 'Entry updated' : `Saved ${inr(amount)}`);
+  if (v.asQuick) addQuick(doc);
+  buzz();
+  snack(f.id ? 'Entry updated' : `Saved ${inr(amount)}${v.asQuick ? ' – quick button added' : ''}`);
   if (again) renderEntry({ type: doc.type, date: doc.date, accountId: doc.accountId, mode: doc.mode, forWhom: doc.forWhom, categoryId: doc.categoryId, storeId: doc.storeId });
   else closeSheet();
 }
@@ -128,11 +131,12 @@ function txRow(t, x, accFocus) {
   const sub = [t.type === 'transfer' ? `${accLabel(t.accountId, x)} → ${accLabel(t.toAccountId, x)}` : accLabel(t.accountId, x),
     x.store.get(t.storeId)?.name, forWhomLabel(t, x), t.note].filter(Boolean).join(' · ');
   const overdue = t.type === 'lend' && t.dueDate && t.dueDate < today() && (x.owes.get(t.personId) || 0) > 0;
-  return `<button class="li" data-act="editEntry" data-id="${t.id}">
+  return `<div class="swipe" data-id="${t.id}"><div class="swipe-bg" aria-hidden="true"><span>${ic('content_copy')}Copy to today</span><span>Delete${ic('delete')}</span></div>
+  <button class="li" data-act="editEntry" data-id="${t.id}">
     <span class="avatar" style="--c:${color}">${ic(iconName || 'category')}</span>
     <span class="li-text"><span class="li-title">${esc(txTitle(t, x))} ${overdue ? `<span class="tag bad">overdue</span>` : ''}</span><span class="li-sub">${esc(sub)}</span></span>
     <span class="li-end ${sign > 0 ? 'pos' : sign < 0 ? '' : 'muted'}">${sign > 0 ? '+' : sign < 0 ? '−' : ''}${inrAbs(t.amount)}</span>
-  </button>`;
+  </button></div>`;
 }
 function txList(list, x, opts = {}) {
   if (!list.length) return `<div class="empty">${ic('receipt_long')}${opts.empty || 'No entries yet'}</div>`;
@@ -229,6 +233,8 @@ function pageHome() {
 
   const body = `
     ${bookFilterChips()}
+    ${syncLine()}
+    ${quickRow()}
     <div class="cols two" style="margin-top:12px">
       <div class="stack">
         <div class="card primary">
@@ -307,8 +313,9 @@ function pageTxns() {
       <div class="stat"><span>Spent</span><b>${inr(out)}</b></div>
       <div class="stat"><span>Income</span><b class="pos">${inr(inc)}</b></div>
       <div class="stat"><span>Entries</span><b>${list.length}</b></div></div></div>
-    <div class="card flush" style="margin-top:12px">${txList(list, x, { empty: q || anyFilter ? 'Nothing matches these filters' : 'No entries in this period' })}</div>`;
-  return { title: 'Entries', body };
+    <p class="muted swipe-hint">${ic('swap_horiz', 'sm')}Swipe an entry left to delete, right to copy it to today.</p>
+    <div class="card flush">${txList(list, x, { empty: q || anyFilter ? 'Nothing matches these filters' : 'No entries in this period' })}</div>`;
+  return { title: 'Entries', body, actions: `<a class="icon-btn" href="#/calendar" title="Calendar" aria-label="Calendar">${ic('calendar_month')}</a>` };
 }
 
 /* ============================================================

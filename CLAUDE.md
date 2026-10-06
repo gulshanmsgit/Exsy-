@@ -26,6 +26,10 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   `openShareSheet` builds the PDF on open so `navigator.share` still has the tap's user activation.
 - Payments record `mode` (Cash/UPI/Bank transfer/Cheque) and `accountId` (where the money went); `accForMode` remembers
   the account last used per mode.
+- `extras.js`: quick buttons live in `prefs/quick` (`items` array) – no extra Firestore collection; swipe rows are
+  `.swipe[data-id]` wrappers from `txRow`; `pendingColls`/`lastSyncAt` fed by `onData` (snapshots with metadata changes);
+  `scheduleRender` has a timer fallback because rAF stops in background tabs.
+- NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
 ## Status (6 Oct 2026)
@@ -33,6 +37,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - v1.1: PDF statements + share with reminder (people, chit members, chit group, reports); payment method + "money went
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
+- v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
 - Owner must create the Firestore database in exsy-591a1 and publish `firestore.rules` before sync works.
 - Owner built an APK with PWABuilder (6 Oct 2026); rebuild it once so `share_target` is included. assetlinks.json would
   need a `gulshanmsgit.github.io` repo (app is in a sub-path) to hide the URL bar.

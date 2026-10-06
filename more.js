@@ -71,12 +71,17 @@ function pageMore() {
   const body = `<div class="card flush">
       ${item('#/accounts', 'account_balance', 'Accounts & books', `${D.books.length} books · ${D.accounts.filter(a => !a.archived).length} accounts`)}
       ${item('#/reports', 'bar_chart', 'Reports', 'Monthly and yearly spending, shops, for whom')}
+      ${item('#/calendar', 'calendar_month', 'Calendar', 'What was spent on each day')}
+      ${item('#/collect', 'event_available', 'Chit collection day', 'Everyone who still has to pay, most overdue first')}
+      ${item('', 'bolt', 'Quick buttons', `${quickItems().length} one-tap entries on Home`, 'data-act="quickEdit"')}
       ${item('#/recurring', 'event_repeat', 'Monthly bills & salary', `${D.recurring.length} reminders`)}
       ${item('#/cats', 'category', 'Categories & shops', `${D.categories.length} categories · ${D.stores.length} shops`)}
     </div>
     <div class="section-head" style="margin-top:16px"><h2>Settings</h2></div>
     <div class="card flush">
       ${item('#/sync', store.kind === 'cloud' ? 'cloud_done' : 'phone_android', 'Sync & devices', store.kind === 'cloud' ? 'Synced with Firebase – open on phone and laptop' : 'Saved on this device only – turn on sync')}
+      ${item('', 'vibration', lsGet('exsy.buzz', true) ? 'Vibration is on' : 'Vibration is off', 'Short buzz when you save, swipe or draw a winner', 'data-act="buzzToggle"')}
+      ${item('', privacyOn() ? 'visibility_off' : 'visibility', privacyOn() ? 'Amounts are hidden' : 'Hide amounts', 'Blur all money figures – also the eye icon at the top', 'data-act="privacy"')}
       ${item('', hasPin ? 'lock' : 'lock_open', hasPin ? 'App lock is on' : 'App lock (PIN)', hasPin ? 'Tap to change or remove the PIN' : 'Ask for a 4-digit PIN when the app opens', 'data-act="pin"')}
       <div class="li static"><span class="avatar">${ic('contrast')}</span><span class="li-text"><span class="li-title">Theme</span></span>
         <div class="seg" style="width:220px">${[['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button class="${theme === k ? 'on' : ''}" data-act="theme" data-k="${k}">${l}</button>`).join('')}</div></div>
@@ -429,10 +434,18 @@ darkMq.addEventListener('change', applyTheme);
 /* ============================================================
    Pages and actions
    ============================================================ */
-const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync };
+const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect };
 
 const ACT = {
   closeSheet: () => closeSheet(),
+  search: () => openSearch(),
+  privacy: () => togglePrivacy(),
+  goto: d => go(d.href),
+  quickUse: d => useQuick(+d.i),
+  quickEdit: () => openQuickEdit(),
+  calDay: d => { UI.calDay = d.d; scheduleRender(); },
+  addEntryOn: d => openEntry({ date: d.d || today() }),
+  buzzToggle: () => { lsSet('exsy.buzz', !lsGet('exsy.buzz', true)); buzz(30); render(); },
   addEntry: d => {
     const init = {};
     if (d.acc) { init.accountId = d.acc; init.mode = ACC_T[X().acc.get(d.acc)?.type]?.mode; }
@@ -542,6 +555,7 @@ document.addEventListener('visibilitychange', () => {
    ============================================================ */
 (async function boot() {
   applyTheme();
+  applyPrivacy();
   takeSharedText();
   // Device link: #join=<base64 {c: code, f?: firebaseConfig}> signs this device in once
   const m = location.hash.match(/^#join=(.+)$/);

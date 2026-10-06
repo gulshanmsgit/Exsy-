@@ -47,6 +47,19 @@ Keep the sync code / device link private: whoever has it can open the book.
 - **Where the money is** (Home): every cash and bank balance; the button on the right counts cash / updates a bank
   balance and records the difference as a "Balance correction".
 
+## Everyday shortcuts
+
+- **Quick buttons:** tick *Also add as a quick button* when saving an entry; it appears on Home and one tap saves it
+  for today (Undo in the message). Rename / reorder / remove: More → Quick buttons.
+- **Swipe an entry:** left = delete (Undo), right = copy it to today.
+- **Pull down** on any screen to refresh; Home shows "Synced 2 min ago" / "Uploading…" / "Offline".
+- **Calendar** (Entries → calendar icon): spending per day, no-spend days, add an entry on a chosen day.
+- **Search** (magnifier at the top): people, chit members, chits, accounts, entries and amounts.
+- **Hide amounts** (eye at the top): blurs every money figure when someone is looking.
+- **Vibration** on save, swipe and chit draw (More → Vibration to turn off).
+- **Chit collection day** (Chits → Collection day): everyone who still has to pay, most overdue first,
+  with WhatsApp reminder and Paid buttons.
+
 ## PDF statements and reminders
 
 - **People → a person → Remind / Statement:** edit the reminder text, then **Share PDF + message** (pick WhatsApp),
@@ -70,6 +83,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `pages.js` | Entry form, Home, Entries, Accounts, People |
 | `chit.js` | Chit groups, collections, draw, payouts |
 | `pdf.js` | PDF statements/reports and the share sheet |
+| `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline |

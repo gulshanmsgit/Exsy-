@@ -53,7 +53,10 @@ function pageChits() {
   const monthGot = sum(active.filter(ci => ci.cur >= 1 && ci.cur <= ci.months), ci => sum(ci.members, mb => Math.min(ci.monthly, ci.paidOf(mb.id, ci.cur))));
   const year = today().slice(0, 4);
   const commYear = sum(D.chitDraws.filter(d => (d.drawDate || '').startsWith(year)), d => d.commission);
-  const body = `<div class="card primary">
+  const toCollect = collectList();
+  const body = `${active.length ? `<a class="card tert collect-cta" href="#/collect">${ic('event_available')}<span class="li-text"><span class="li-title">Collection day</span>
+      <span class="li-sub">${toCollect.length ? `${toCollect.length} member${toCollect.length > 1 ? 's' : ''} to collect ${inr(sum(toCollect, r => r.total))} from` : 'Everyone has paid'}</span></span>${ic('chevron_right')}</a>` : ''}
+    <div class="card primary" style="margin-top:12px">
       <div class="hero-label">This month (${fmtMonth(k)}) collected</div>
       <div class="hero-num">${inr(monthGot)} <span style="font-size:18px;opacity:.75">of ${inr(monthExpected)}</span></div>
       <div class="progress"><i style="width:${monthExpected ? monthGot / monthExpected * 100 : 0}%"></i></div>
@@ -279,6 +282,7 @@ function openPayCell(chId, mbId, m, pre = {}) {
     if (!(amt > 0)) { snack('Enter the amount'); return; }
     save('chitPayments', { chitId: chId, memberId: mbId, month: m, amount: amt, date: v.date || today(), mode: v.mode, accountId: v.accountId || '', note: (v.note || '').trim() });
     rememberPay(v.mode, v.accountId);
+    buzz();
     closeSheet(); snack(`${mb?.name}: ${inr(amt)} by ${v.mode} saved`);
   };
   $$('[data-delpay]', s).forEach(b => b.onclick = () => { closeSheet(); removeMany([['chitPayments', b.dataset.delpay]], 'Payment deleted'); });
@@ -316,7 +320,7 @@ function openDraw(chId, m) {
     };
     step();
   };
-  ok.onclick = () => { if (!winner) return; saveDraw(ci, m, winner.id, today()); closeSheet(); snack(`${winner.name} won month ${m}`); };
+  ok.onclick = () => { if (!winner) return; saveDraw(ci, m, winner.id, today()); buzz([30, 60, 30]); closeSheet(); snack(`${winner.name} won month ${m}`); };
 }
 function saveDraw(ci, m, memberId, date) {
   return save('chitDraws', { chitId: ci.ch.id, month: m, memberId, drawDate: date, payout: ci.payout, commission: ci.commission, paid: false });

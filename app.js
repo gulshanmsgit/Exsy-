@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -73,7 +73,7 @@ const randCode = (n = 32) => { const abc = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLM
 
 /* ---------- icons (Material Symbols, only the glyphs we use are downloaded) ---------- */
 const ICON_CHOICES = ['shopping_basket', 'nutrition', 'local_drink', 'cleaning_services', 'medication', 'bolt', 'water_drop', 'local_fire_department', 'wifi', 'local_gas_station', 'directions_bus', 'restaurant', 'checkroom', 'school', 'house', 'account_balance', 'shield', 'redeem', 'temple_hindu', 'build', 'spa', 'movie', 'category', 'payments', 'family_restroom', 'percent', 'currency_exchange', 'groups', 'savings', 'shopping_cart', 'storefront', 'shopping_bag', 'local_shipping', 'store', 'local_pharmacy', 'delivery_dining', 'language', 'more_horiz', 'pets', 'child_care', 'sports_cricket', 'flight', 'train', 'two_wheeler', 'directions_car', 'phone_iphone', 'tv', 'laptop', 'celebration', 'volunteer_activism', 'work', 'receipt', 'local_cafe', 'bakery_dining', 'egg', 'set_meal', 'lunch_dining', 'local_laundry_service', 'content_cut', 'fitness_center', 'hotel', 'checklist', 'local_hospital', 'agriculture', 'construction', 'card_giftcard', 'person', 'face', 'elderly', 'elderly_woman', 'woman', 'man', 'home_work'];
-const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description', 'content_paste'];
+const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description', 'content_paste', 'refresh', 'cloud_upload', 'vibration', 'arrow_upward', 'event_available', 'bolt'];
 const ALL_ICONS = new Set([...ICON_CHOICES, ...UI_ICONS]);
 (function loadIconFont() {
   const names = [...ALL_ICONS].sort().join(',');
@@ -155,25 +155,32 @@ async function cloudStore(cfg, ws) {
   const { F, db } = fbMods;
   const ref = (c, id) => F.doc(db, FIRESTORE_ROOT, ws, c, id);
   const unsubs = [];
-  return {
+  let cbs = null;
+  const cloud = {
     kind: 'cloud',
+    // metadata changes included so "uploading…" clears once the server has the write
     start(cb, err) {
-      for (const c of COLLS) unsubs.push(F.onSnapshot(F.collection(db, FIRESTORE_ROOT, ws, c),
-        s => cb(c, s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata.fromCache), e => err(c, e)));
+      cbs = [cb, err];
+      for (const c of COLLS) unsubs.push(F.onSnapshot(F.collection(db, FIRESTORE_ROOT, ws, c), { includeMetadataChanges: true },
+        s => cb(c, s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata.fromCache, s.metadata.hasPendingWrites), e => err(c, e)));
     },
     put: (c, id, d) => F.setDoc(ref(c, id), clean(d)),
     del: (c, id) => F.deleteDoc(ref(c, id)),
-    stop() { unsubs.splice(0).forEach(u => u()); }
+    stop() { unsubs.splice(0).forEach(u => u()); },
+    refresh() { if (cbs) { cloud.stop(); cloud.start(...cbs); } }
   };
+  return cloud;
 }
 
 const sigOf = arr => arr.map(d => d.id + ':' + (d.updatedAt || 0)).sort().join('|');
-function onData(c, docs, fromCache) {
-  const wasReady = ready();
+function onData(c, docs, fromCache, hasPending) {
+  const wasReady = ready(), wasPending = pendingColls.size, wasSync = lastSyncAt;
   if (!fromCache || !navigator.onLine || store.kind === 'local') loaded.add(c);
+  if (!fromCache) lastSyncAt = Date.now();
+  if (hasPending) pendingColls.add(c); else pendingColls.delete(c);
   const sig = sigOf(docs);
   if (sigs[c] !== sig) { sigs[c] = sig; D[c] = docs; VER++; scheduleRender(); }
-  else if (!wasReady && ready()) scheduleRender();
+  else if ((!wasReady && ready()) || wasPending !== pendingColls.size || (!wasSync && lastSyncAt)) scheduleRender();
 }
 function onStoreErr(c, e) {
   console.error(c, e);
@@ -289,7 +296,13 @@ const UI = Object.assign({ book: 'all', txMonth: thisMonth(), q: '', txType: '',
 UI.q = '';
 function setUI(k, v) { UI[k] = v; lsSet(LS.ui, { book: UI.book, chitTab: UI.chitTab, repMode: UI.repMode, catTab: UI.catTab }); scheduleRender(); }
 let locked = false, rq = 0, lastRoute = '';
-const scheduleRender = () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; render(); }); };
+// Next animation frame, with a timer fallback because frames don't run while the app is in the background
+const scheduleRender = () => {
+  if (rq) return;
+  rq = 1;
+  const run = () => { if (!rq) return; rq = 0; render(); };
+  requestAnimationFrame(run); setTimeout(run, 150);
+};
 
 const NAV = [
   { id: 'home', label: 'Home', icon: 'home' },
@@ -298,7 +311,7 @@ const NAV = [
   { id: 'people', label: 'People', icon: 'handshake' },
   { id: 'more', label: 'More', icon: 'menu' }
 ];
-const NAV_OF = { chit: 'chits', person: 'people', accounts: 'more', account: 'more', reports: 'more', cats: 'more', recurring: 'more', sync: 'more' };
+const NAV_OF = { chit: 'chits', person: 'people', accounts: 'more', account: 'more', reports: 'more', cats: 'more', recurring: 'more', sync: 'more', calendar: 'txns', collect: 'chits' };
 function route() {
   const [p, a] = location.hash.replace(/^#\/?/, '').split('/');
   return { p: PAGES[p] ? p : 'home', a: a ? decodeURIComponent(a) : '' };
@@ -328,9 +341,11 @@ function render() {
 
 function shell(pg, active) {
   const nav = NAV.map(n => `<a class="nav-item ${n.id === active ? 'on' : ''}" href="#/${n.id}"><span class="pill">${ic(n.icon)}</span><span>${n.label}</span></a>`).join('');
-  const sync = store.kind === 'cloud'
-    ? `<a class="icon-btn" href="#/sync" title="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}">${ic(navigator.onLine ? 'cloud_done' : 'cloud_off')}</a>`
-    : `<a class="icon-btn" href="#/sync" title="Saved on this device only">${ic('phone_android')}</a>`;
+  const sync = (store.kind === 'cloud'
+    ? `<a class="icon-btn hide-sm" href="#/sync" title="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}">${ic(navigator.onLine ? 'cloud_done' : 'cloud_off')}</a>`
+    : `<a class="icon-btn hide-sm" href="#/sync" title="Saved on this device only">${ic('phone_android')}</a>`)
+    + `<button class="icon-btn" data-act="search" title="Search" aria-label="Search">${ic('search')}</button>`
+    + `<button class="icon-btn" data-act="privacy" title="${privacyOn() ? 'Show amounts' : 'Hide amounts'}" aria-label="${privacyOn() ? 'Show amounts' : 'Hide amounts'}">${ic(privacyOn() ? 'visibility_off' : 'visibility')}</button>`;
   const fabLabel = pg.fabLabel || 'Add entry';
   const fab = pg.fab === false ? '' : `<button class="fab" data-act="${pg.fabAct || 'addEntry'}" ${pg.fabData || ''} aria-label="${esc(fabLabel)}" title="${esc(fabLabel)}">${ic(pg.fabIcon || 'add')}<span>${fabLabel}</span></button>`;
   return `<div class="layout">
