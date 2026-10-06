@@ -364,3 +364,7 @@ body { overscroll-behavior-y: contain; }
 .collect-cta > .ms:first-child { font-size: 28px; }
 .collect-cta .li-sub { color: inherit; opacity: .85; }
 .privacy :is(.hero-num, .stat b, .li-end, .legend b, .bar-row b, .kv b, .cal-amt, .day-head span + span, .quick-text small, .hero-label) { filter: blur(7px); user-select: none; }
+/* "Take it from Mother's money" switch in the entry form */
+.claim-row { margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.claim-row > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.claim-row small { font-size: 12px; opacity: .85; }

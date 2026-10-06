@@ -29,9 +29,9 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - `extras.js`: quick buttons live in `prefs/quick` (`items` array) – no extra Firestore collection; swipe rows are
   `.swipe[data-id]` wrappers from `txRow`; `pendingColls`/`lastSyncAt` fed by `onData` (snapshots with metadata changes);
   `scheduleRender` has a timer fallback because rAF stops in background tabs.
-- `home.js`: `prefs/home` {payerBook ('' = just track, unset = book named Mother), since (default 2026-10-01)}.
-  Expense with forWhom 'home' from another book's account = claim unless `homeClaim === false`; transfers with
-  `homeSettle: true` from the payer book reduce it. Recurring reminders can be transfers (monthly money to Mother).
+- `home.js` (Mother's money): `prefs/home` {payerBook, salary:[{from,amount}], salaryDay, since}. `motherLedger()` =
+  monthly money (computed, no entries) − home claims (expense forWhom 'home' from a non-Mother account, `homeClaim !== false`)
+  − transfers Me→Mother + transfers Mother→Me, counted from `since`. Route `#/mother` (`#/homecosts` kept as alias).
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -41,7 +41,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
-- v1.4: Home expenses (Mother pays for home; claims, settle, monthly money reminder).
+- v1.5: simplified to one "Mother's money" balance (monthly money + home costs + given/received); switch moved up in the entry form.
 - Owner must create the Firestore database in exsy-591a1 and publish `firestore.rules` before sync works.
 - Owner built an APK with PWABuilder (6 Oct 2026); rebuild it once so `share_target` is included. assetlinks.json would
   need a `gulshanmsgit.github.io` repo (app is in a sub-path) to hide the URL bar.

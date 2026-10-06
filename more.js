@@ -71,7 +71,7 @@ function pageMore() {
   const body = `<div class="card flush">
       ${item('#/accounts', 'account_balance', 'Accounts & books', `${D.books.length} books · ${D.accounts.filter(a => !a.archived).length} accounts`)}
       ${item('#/reports', 'bar_chart', 'Reports', 'Monthly and yearly spending, shops, for whom')}
-      ${item('#/homecosts', 'house', 'Home expenses', homePayer() ? `${payerName()} pays for the home${owedTo(meBook()?.id) > 0 ? ` · owes you ${inr(owedTo(meBook()?.id))}` : ''}` : 'Track what is spent for the home')}
+      ${item('#/mother', 'house', homePayer() ? `${payerName()}’s money & home costs` : 'Home costs', homePayer() ? (() => { const b = motherLedger().balance; return b >= 0 ? `${inr(b)} of ${payerName()}’s money with you` : `${payerName()} owes you ${inr(-b)}`; })() : 'Choose whose money pays for the home')}
       ${item('#/calendar', 'calendar_month', 'Calendar', 'What was spent on each day')}
       ${item('#/collect', 'event_available', 'Chit collection day', 'Everyone who still has to pay, most overdue first')}
       ${item('', 'bolt', 'Quick buttons', `${quickItems().length} one-tap entries on Home`, 'data-act="quickEdit"')}
@@ -436,14 +436,14 @@ darkMq.addEventListener('change', applyTheme);
 /* ============================================================
    Pages and actions
    ============================================================ */
-const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect, homecosts: pageHomeCosts };
+const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect, mother: pageMother, homecosts: pageMother };
 
 const ACT = {
   closeSheet: () => closeSheet(),
   search: () => openSearch(),
-  homeSettle: d => openSettle(d.b),
-  homePayer: d => { save('prefs', { ...homePrefs(), id: 'home', payerBook: d.b }); snack(d.b ? `${X().book.get(d.b)?.name} pays for the home` : 'Home costs are only tracked'); },
-  homeMonthly: () => openHomeMonthly(),
+  motherMove: d => openMotherMove(d.dir),
+  motherSalary: () => saveSalary(),
+  homePayer: d => { saveHomePrefs({ payerBook: d.b }); snack(d.b ? `${X().book.get(d.b)?.name}’s money pays for the home` : 'Home costs are only tracked'); },
   addHomeExpense: () => openEntry({ forWhom: 'home' }),
   privacy: () => togglePrivacy(),
   goto: d => go(d.href),

@@ -39,11 +39,11 @@ function renderEntry(f) {
     <div class="form-label">${ty === 'transfer' ? 'From' : ty === 'income' || ty === 'collect' || ty === 'borrow' ? 'Money went to (whose cash / which bank)' : 'Paid from'}</div>
     ${accChips('accountId', f.accountId)}
     ${ty === 'transfer' ? `<div class="form-label">To</div>${accChips('toAccountId', f.toAccountId)}` : ''}
-    ${isCat ? `<div class="form-label">Category</div>${usageChips('categoryId', cats, f.categoryId, x.catUse)}` : ''}
-    ${ty === 'expense' ? `<div class="form-label">Where (shop)</div>${usageChips('storeId', [{ id: '', name: 'None', icon: '' }, ...D.stores], f.storeId || '', x.storeUse, 8)}
-      <div class="form-label">For whom</div>
+    ${ty === 'expense' ? `<div class="form-label">For whom</div>
       <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}</div>
       ${claimSwitch(f)}` : ''}
+    ${isCat ? `<div class="form-label">Category</div>${usageChips('categoryId', cats, f.categoryId, x.catUse)}` : ''}
+    ${ty === 'expense' ? `<div class="form-label">Where (shop)</div>${usageChips('storeId', [{ id: '', name: 'None', icon: '' }, ...D.stores], f.storeId || '', x.storeUse, 8)}` : ''}
     <div class="form-label">${IN_T.has(ty) ? 'How did they pay?' : ty === 'transfer' ? 'How' : 'How did you pay?'}</div>
     <div class="chips" id="ef-modes">${MODES.map(m => chip('mode', m, m, f.mode === m, MODE_ICON[m])).join('')}</div>
     <div class="grid2" style="margin-top:16px">
@@ -139,7 +139,7 @@ function txRow(t, x, accFocus) {
   return `<div class="swipe" data-id="${t.id}"><div class="swipe-bg" aria-hidden="true"><span>${ic('content_copy')}Copy to today</span><span>Delete${ic('delete')}</span></div>
   <button class="li" data-act="editEntry" data-id="${t.id}">
     <span class="avatar" style="--c:${color}">${ic(iconName || 'category')}</span>
-    <span class="li-text"><span class="li-title">${esc(txTitle(t, x))} ${overdue ? `<span class="tag bad">overdue</span>` : ''}${isHomeClaim(t) ? `<span class="tag info" title="${esc(payerName())} pays this back">${ic('handshake')}${esc(payerName())}</span>` : ''}${t.homeSettle ? `<span class="tag ok">paid back</span>` : ''}</span><span class="li-sub">${esc(sub)}</span></span>
+    <span class="li-text"><span class="li-title">${esc(txTitle(t, x))} ${overdue ? `<span class="tag bad">overdue</span>` : ''}${isHomeClaim(t) ? `<span class="tag info" title="Taken from ${esc(payerName())}’s money">${ic('house')}${esc(payerName())}’s</span>` : ''}</span><span class="li-sub">${esc(sub)}</span></span>
     <span class="li-end ${sign > 0 ? 'pos' : sign < 0 ? '' : 'muted'}">${sign > 0 ? '+' : sign < 0 ? '−' : ''}${inrAbs(t.amount)}</span>
   </button></div>`;
 }
@@ -254,6 +254,7 @@ function pageHome() {
             ${bookTiles}
           </div>
           ${chitHeld > 0 ? `<div class="hero-label" style="margin-top:10px">${ic('info', 'sm')} Includes ${inr(chitHeld)} chit money you are holding</div>` : ''}
+          ${motherHeroLine()}
         </div>
         <div class="btn-row"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>
         ${balancesCard(x, accs)}

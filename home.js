@@ -1,10 +1,15 @@
 'use strict';
-/* Home expenses: one book (normally Mother) is responsible for the home.
-   Any expense "for Home" paid from someone else's money is owed back by that book – unless the entry is
-   marked "don't ask back". Paying it back is a transfer marked homeSettle. Settings live in prefs/home. */
+/* Mother's money – one running balance of Mother's money that you are keeping:
+     + her fixed monthly money (salary), added automatically each month from the settings
+     − home costs you paid from your own accounts (home costs are hers) unless the entry says otherwise
+     − money you give her (any transfer from your accounts to hers)
+     + money she gives you (any transfer from her accounts to yours)
+   Positive = you are keeping that much of her money; negative = she owes you.
+   Settings live in prefs/home: { payerBook, salary: [{ from: 'YYYY-MM', amount }], salaryDay, since }. */
 
 const homePrefs = () => D.prefs.find(p => p.id === 'home') || {};
-// Book that pays for the home; '' = nobody (just track), unset = the book called Mother
+const saveHomePrefs = patch => save('prefs', { ...homePrefs(), id: 'home', ...patch });
+// Book whose money pays for the home: '' = nobody (just track), unset = the book called Mother
 function homePayer() {
   const id = homePrefs().payerBook;
   if (id === '') return null;
@@ -12,32 +17,44 @@ function homePayer() {
   return (D.books.find(b => /mother|amma|mom/i.test(b.name)) || {}).id || null;
 }
 const payerName = () => X().book.get(homePayer())?.name || 'Mother';
-// Only entries from this date count, so older home costs already settled in person are left out.
-// Default: 1 Oct 2026, when the owner started using Exsy.
-const homeSince = () => homePrefs().since || '2026-10-01';
+const salaryPlan = () => (homePrefs().salary || []).slice().sort((a, b) => a.from.localeCompare(b.from));
+const salaryFor = month => { let amt = 0; for (const s of salaryPlan()) if (s.from <= month) amt = num(s.amount); return amt; };
+// Counting starts here (older entries were settled before Exsy)
+const homeSince = () => homePrefs().since || (salaryPlan()[0] ? salaryPlan()[0].from + '-01' : '2026-10-01');
 const claimApplies = (accountId, forWhom) => { const p = homePayer(), b = X().acc.get(accountId)?.bookId; return !!p && forWhom === 'home' && !!b && b !== p; };
 const isHomeClaim = t => t.type === 'expense' && t.homeClaim !== false && t.date >= homeSince() && claimApplies(t.accountId, t.forWhom);
 
 let homeMemo = { v: -1 };
-function homeLedger() {
+function motherLedger() {
   if (homeMemo.v === VER) return homeMemo;
-  const x = X(), payer = homePayer(), owed = new Map(), claims = [], settles = [];
-  if (payer) for (const t of D.txns) {
-    if (isHomeClaim(t)) { const b = x.acc.get(t.accountId).bookId; owed.set(b, (owed.get(b) || 0) + num(t.amount)); claims.push(t); }
-    else if (t.type === 'transfer' && t.homeSettle && t.date >= homeSince() && x.acc.get(t.accountId)?.bookId === payer) {
-      const tb = x.acc.get(t.toAccountId)?.bookId;
-      if (tb) { owed.set(tb, (owed.get(tb) || 0) - num(t.amount)); settles.push(t); }
+  const x = X(), mom = homePayer(), me = meBook()?.id, since = homeSince(), months = new Map();
+  const row = k => months.get(k) || months.set(k, { salary: 0, home: 0, given: 0, got: 0 }).get(k);
+  const L = { v: VER, mom, months, claims: [], moves: [], salary: 0, home: 0, given: 0, got: 0 };
+  if (mom) {
+    // monthly money: from the first planned month up to this month (this month once its day has come)
+    const plan = salaryPlan(), day = +homePrefs().salaryDay || 1, cur = thisMonth();
+    if (plan.length) for (let k = plan[0].from < since.slice(0, 7) ? since.slice(0, 7) : plan[0].from; k <= cur; k = addMonths(k, 1)) {
+      if (k === cur && +today().slice(8) < day) break;
+      const a = salaryFor(k); if (a) { row(k).salary += a; L.salary += a; }
+    }
+    for (const t of D.txns) {
+      if (t.date < since) continue;
+      if (isHomeClaim(t)) { row(t.date.slice(0, 7)).home += num(t.amount); L.home += num(t.amount); L.claims.push(t); continue; }
+      if (t.type !== 'transfer') continue;
+      const fb = x.acc.get(t.accountId)?.bookId, tb = x.acc.get(t.toAccountId)?.bookId;
+      if (fb === me && tb === mom) { row(t.date.slice(0, 7)).given += num(t.amount); L.given += num(t.amount); L.moves.push(t); }
+      else if (fb === mom && tb === me) { row(t.date.slice(0, 7)).got += num(t.amount); L.got += num(t.amount); L.moves.push(t); }
     }
   }
-  homeMemo = { v: VER, payer, owed, claims, settles };
-  return homeMemo;
+  L.balance = round2(L.salary - L.home - L.given + L.got);
+  homeMemo = L;
+  return L;
 }
-const owedTo = bookId => round2(homeLedger().owed.get(bookId) || 0);
 
-/* ---------- entry form switch: "Mother pays this back" ---------- */
+/* ---------- entry form switch ---------- */
 function claimSwitch(f) {
   const show = f.type === 'expense' && claimApplies(f.accountId, f.forWhom || 'home');
-  return `<label class="switch-row ${show ? '' : 'hide'}" id="ef-claim"><span>${ic('handshake', 'sm')} <b class="ef-claim-name">${esc(payerName())}</b> pays this back to me</span>
+  return `<label class="switch-row claim-row ${show ? '' : 'hide'}" id="ef-claim"><span><span>Take it from <b>${esc(payerName())}’s money</b></span><small>Home costs are ${esc(payerName())}’s – switch off if this one is yours</small></span>
     <input type="checkbox" name="homeClaim" ${f.homeClaim === false ? '' : 'checked'}></label>`;
 }
 function syncClaimSwitch(form) {
@@ -47,90 +64,103 @@ function syncClaimSwitch(form) {
 }
 
 /* ---------- page ---------- */
-function pageHomeCosts() {
-  const x = X(), L = homeLedger(), payer = L.payer, pName = payerName();
-  const k = UI.homeCostMonth || thisMonth();
-  const list = D.txns.filter(t => t.type === 'expense' && t.forWhom === 'home' && t.date.startsWith(k));
-  const total = sum(list, t => t.amount);
-  const byBook = new Map();
-  for (const t of list) { const b = x.acc.get(t.accountId)?.bookId || '?'; byBook.set(b, (byBook.get(b) || 0) + num(t.amount)); }
-  const paidRows = [...byBook].sort((a, b) => b[1] - a[1]);
-  const cats = spendBreakdown(list, x, t => t.categoryId, 8);
-  const debts = [...L.owed].filter(([, v]) => Math.abs(v) > 0.005);
-  const who = b => (D.books.find(z => z.id === b)?.primary ? 'you' : x.book.get(b)?.name || '?');
-  const hero = !payer
-    ? `<div class="hero-label">Home costs are only tracked – nobody pays anyone back.</div><div class="hero-num">${inr(total)}</div><div class="hero-label">spent for Home in ${fmtMonth(k)}</div>`
-    : debts.length
-      ? debts.map(([b, v]) => `<div class="hero-label">${v > 0 ? `${esc(pName)} owes ${esc(who(b))}` : `${esc(who(b))} ${who(b) === 'you' ? 'owe' : 'owes'} ${esc(pName)}`}</div>
-          <div class="hero-num">${inrAbs(v)}</div>
-          ${v > 0 ? `<button class="btn filled" data-act="homeSettle" data-b="${b}" style="margin-bottom:12px">${ic('swap_horiz')}${esc(pName)} paid it back</button>` : ''}`).join('')
-      : `<div class="hero-label">Home costs</div><div class="hero-num">All settled ${ic('check_circle')}</div>`;
-  const body = `<div class="card primary">${hero}
-      ${payer ? `<p class="hero-label">${esc(pName)}’s money pays for the home. When you pay a home expense from your own account, it is added here – unless you switch off “${esc(pName)} pays this back” on that entry.</p>` : ''}</div>
-    <div class="card" style="margin-top:12px">
-      <div class="card-title"><span style="flex:1">Spent for Home</span>${monthNav('homeCostMonth', k, fmtMonth(k))}</div>
-      <div class="hero-num" style="font-size:28px;margin:0 0 8px">${inr(total)}</div>
-      ${paidRows.length ? `<div class="form-label" style="margin-top:4px">Who paid</div><div class="bars">${paidRows.map(([b, v], i) => `<div class="bar-row"><span>${ic('person')}${esc(x.book.get(b)?.name || '?')}</span><b>${inr(v)}</b><div class="track"><i style="width:${v / paidRows[0][1] * 100}%;--c:${PALETTE[i]}"></i></div></div>`).join('')}</div>` : ''}
-      ${cats.length ? `<div class="form-label" style="margin-top:16px">What for</div><div class="bars">${cats.map(([c, v], i) => `<div class="bar-row"><span>${ic(x.cat.get(c)?.icon || 'category')}${esc(x.cat.get(c)?.name || c)}</span><b>${inr(v)}</b><div class="track"><i style="width:${v / cats[0][1] * 100}%;--c:${PALETTE[(i + 3) % PALETTE.length]}"></i></div></div>`).join('')}</div>` : `<div class="empty">No home expenses in ${fmtMonth(k)}</div>`}
+function balanceText(L, name) {
+  return L.balance >= 0 ? { label: `${name}’s money with you`, sub: `You are keeping this for ${name}` }
+    : { label: `${name} owes you`, sub: `Home costs you paid are more than ${name}’s money` };
+}
+function pageMother() {
+  const x = X(), L = motherLedger(), name = payerName(), p = homePrefs();
+  if (!L.mom) return { title: 'Mother’s money', back: '#/more', fab: false, body: `<div class="card"><p>Choose whose money pays for the home:</p>${payerChips(null)}</div>` };
+  const bt = balanceText(L, name), k = thisMonth(), m = L.months.get(k) || { salary: 0, home: 0, given: 0, got: 0 };
+  const plan = salaryPlan(), curSal = salaryFor(k);
+  const stmt = [...L.months].sort((a, b) => b[0].localeCompare(a[0]));
+  let run = L.balance;
+  const stmtRows = stmt.map(([mk, r]) => { const end = run; run = round2(run - (r.salary - r.home - r.given + r.got)); return { mk, r, end }; });
+  const homeMonth = D.txns.filter(t => t.type === 'expense' && t.forWhom === 'home' && t.date.startsWith(k));
+  const body = `<div class="card primary">
+      <div class="hero-label">${bt.label}</div><div class="hero-num">${inrAbs(L.balance)}</div>
+      <div class="hero-label" style="margin-bottom:12px">${bt.sub}</div>
+      <div class="btn-row"><button class="btn filled" data-act="motherMove" data-dir="give">${ic('north_east')}Gave to ${esc(name)}</button>
+        <button class="btn tonal" data-act="motherMove" data-dir="get">${ic('south_west')}${esc(name)} gave me</button></div></div>
+
+    <div class="card" style="margin-top:12px"><div class="card-title">${ic('today')}This month · ${fmtMonth(k)}</div>
+      <div class="kv"><span>+ Monthly money for ${esc(name)}</span><b class="pos">${m.salary ? inr(m.salary) : curSal ? `${inr(curSal)} on the ${ordinal(+p.salaryDay || 1)}` : 'not set'}</b></div>
+      <div class="kv"><span>− Home costs you paid</span><b>${inr(m.home)}</b></div>
+      <div class="kv"><span>− Given to ${esc(name)}</span><b>${inr(m.given)}</b></div>
+      ${m.got ? `<div class="kv"><span>+ ${esc(name)} gave you</span><b class="pos">${inr(m.got)}</b></div>` : ''}
     </div>
-    <div class="section-head" style="margin-top:12px"><h2>Who pays for the home?</h2></div>
-    <div class="chips">${booksSorted().map(b => `<button class="chip ${payer === b.id ? 'on' : ''}" data-act="homePayer" data-b="${b.id}">${payer === b.id ? ic('check') : ''}${esc(b.name)}</button>`).join('')}
-      <button class="chip ${!payer ? 'on' : ''}" data-act="homePayer" data-b="">${!payer ? ic('check') : ''}Nobody – just track</button></div>
-    ${payer ? `<label class="field" style="margin-top:12px;max-width:260px"><span>Count home costs from</span><input type="date" id="home-since" value="${esc(homeSince())}"></label>
-      <p class="muted" style="margin:4px 4px 0">Entries before this date are left out (already settled).</p>` : ''}
-    <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <div style="flex:1;min-width:180px"><b style="font-weight:500">Fixed monthly money to ${esc(pName)}</b><div class="muted">${monthlyToPayer() ? esc(monthlyToPayer()) : 'Get a reminder each month and record it in one tap.'}</div></div>
-      <button class="btn tonal" data-act="homeMonthly">${ic('event_repeat')}${monthlyToPayer() ? 'Change' : 'Set up'}</button></div>
-    <div class="section-head" style="margin-top:12px"><h2>Home entries · ${fmtMonth(k)}</h2></div>
-    <div class="card flush">${txList(list, x, { empty: 'Nothing yet – choose “For whom: Home” when adding an expense' })}</div>
-    ${L.settles.length ? `<div class="section-head" style="margin-top:12px"><h2>Paid back</h2></div><div class="card flush">${txList(L.settles.slice().sort(byDateDesc).slice(0, 12), x, { flat: true })}</div>` : ''}`;
-  return { title: 'Home expenses', back: '#/more', body, fabAct: 'addHomeExpense', fabLabel: 'Home expense' };
+
+    <div class="card" style="margin-top:12px"><div class="card-title">${ic('payments')}${esc(name)}’s monthly money</div>
+      <p class="muted" style="margin-bottom:12px">The fixed amount you give ${esc(name)} each month. It is added here automatically – no entry needed, the money can stay in your account.</p>
+      <div class="grid3">
+        ${field('Amount each month', `<input id="mo-amt" inputmode="decimal" value="${curSal || ''}" placeholder="e.g. 5000">`)}
+        ${field('From month', `<input id="mo-from" type="month" value="${esc(plan.filter(s => s.from <= k).pop()?.from || k)}">`)}
+        ${field('Day', `<input id="mo-day" type="number" min="1" max="28" value="${esc(p.salaryDay || 1)}">`)}
+      </div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn filled" data-act="motherSalary">${ic('check')}Save</button>
+        ${plan.length > 1 ? `<span class="muted" style="align-self:center">Earlier: ${plan.slice(0, -1).map(s => `${inr(s.amount)} from ${fmtMonth(s.from)}`).join(', ')}</span>` : ''}</div>
+    </div>
+
+    ${stmtRows.length ? `<div class="section-head" style="margin-top:12px"><h2>Month by month</h2></div>
+    <div class="card flush">${stmtRows.map(({ mk, r, end }) => `<div class="li static"><span class="li-text"><span class="li-title">${fmtMonth(mk)}</span>
+      <span class="li-sub">${[r.salary && `+${inr(r.salary)} money`, r.home && `−${inr(r.home)} home`, r.given && `−${inr(r.given)} given`, r.got && `+${inr(r.got)} from ${esc(name)}`].filter(Boolean).join(' · ')}</span></span>
+      <span class="li-end"><small>${end >= 0 ? 'with you' : 'owes you'}</small>${inrAbs(end)}</span></div>`).join('')}</div>` : ''}
+
+    <div class="section-head" style="margin-top:12px"><h2>Home costs · ${fmtMonth(k)}</h2><span class="muted">${inr(sum(homeMonth, t => t.amount))}</span></div>
+    <div class="card flush">${txList(homeMonth, x, { empty: 'Add an expense with “For whom: Home”' })}</div>
+
+    <div class="section-head" style="margin-top:12px"><h2>Settings</h2></div>
+    <div class="card"><div class="form-label" style="margin-top:0">Whose money pays for the home</div>${payerChips(L.mom)}
+      <label class="field" style="margin-top:12px;max-width:260px"><span>Count from</span><input type="date" id="home-since" value="${esc(homeSince())}"></label>
+      <p class="muted" style="margin:4px 4px 0">Entries before this date are left out (already settled).</p></div>`;
+  return { title: `${name}’s money`, back: '#/more', body, fabAct: 'addHomeExpense', fabLabel: 'Home expense' };
 }
-function monthlyToPayer() {
-  const p = homePayer(), x = X();
-  const r = D.recurring.find(r => r.type === 'transfer' && x.acc.get(r.toAccountId)?.bookId === p);
-  return r ? `${inr(r.amount)} on the ${ordinal(+r.day || 1)} · ${accLabel(r.accountId, x)} → ${accLabel(r.toAccountId, x)}` : '';
+function payerChips(cur) {
+  return `<div class="chips">${booksSorted().filter(b => !b.primary).map(b => `<button class="chip ${cur === b.id ? 'on' : ''}" data-act="homePayer" data-b="${b.id}">${cur === b.id ? ic('check') : ''}${esc(b.name)}</button>`).join('')}
+    <button class="chip ${!cur ? 'on' : ''}" data-act="homePayer" data-b="">${!cur ? ic('check') : ''}Nobody – just track home costs</button></div>`;
 }
-function openHomeMonthly() {
-  const p = homePayer(), x = X();
-  const r = D.recurring.find(r => r.type === 'transfer' && x.acc.get(r.toAccountId)?.bookId === p);
-  if (r) return openRecurringForm(r.id);
-  const to = D.accounts.find(a => a.bookId === p && a.type === 'bank' && !a.archived) || D.accounts.find(a => a.bookId === p && !a.archived);
-  openRecurringForm(undefined, { type: 'transfer', name: `Monthly money to ${payerName()}`, toAccountId: to?.id || '' });
+function saveSalary() {
+  const amt = evalAmount($('#mo-amt').value), from = $('#mo-from').value || thisMonth(), day = clamp(+$('#mo-day').value || 1, 1, 28);
+  if (isNaN(amt)) return snack('Enter the amount');
+  const plan = salaryPlan().filter(s => s.from !== from).concat(amt ? [{ from, amount: amt }] : []);
+  saveHomePrefs({ salary: plan, salaryDay: day });
+  buzz(); snack(amt ? `${payerName()}’s money: ${inr(amt)} a month from ${fmtMonth(from)}` : 'Monthly money removed');
 }
 
-/* ---------- paying back ---------- */
-function openSettle(creditor) {
-  const x = X(), payer = homePayer(), owed = owedTo(creditor), pName = payerName();
-  const fromAcc = (D.accounts.find(a => a.bookId === payer && a.type === 'bank' && !a.archived) || D.accounts.find(a => a.bookId === payer && !a.archived) || {}).id;
-  const toAcc = (D.accounts.find(a => a.bookId === creditor && a.type === 'bank' && !a.archived) || D.accounts.find(a => a.bookId === creditor && !a.archived) || {}).id;
-  const s = openSheet(`<form id="hs">${sheetHead(`${pName} pays back`)}
-    <p class="lead">${esc(pName)} owes ${inr(owed)} for home expenses ${x.book.get(creditor)?.primary ? 'you' : esc(x.book.get(creditor)?.name)} paid. Record what was given back – all of it or part.</p>
-    <label class="amount-field"><b>₹</b><input name="amount" inputmode="decimal" value="${owed > 0 ? owed : ''}"></label>
-    <div class="form-label">From ${esc(pName)}’s</div>${accChips('accountId', fromAcc, a => a.bookId === payer)}
-    <div class="form-label">Into</div>${accChips('toAccountId', toAcc, a => a.bookId === creditor)}
-    <div class="form-label">How</div><div class="chips">${['Cash', 'UPI', 'Net banking'].map(m => chip('mode', m, m, m === 'UPI', MODE_ICON[m])).join('')}</div>
-    <div style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${today()}">`)}</div>
+/* ---------- giving / receiving ---------- */
+function openMotherMove(dir) {
+  const mom = homePayer(), me = meBook()?.id, name = payerName(), give = dir === 'give', L = motherLedger();
+  const firstOf = (book, type) => (D.accounts.find(a => a.bookId === book && a.type === type && !a.archived) || D.accounts.find(a => a.bookId === book && !a.archived) || {}).id;
+  const from = give ? firstOf(me, 'cash') : firstOf(mom, 'cash'), to = give ? firstOf(mom, 'cash') : firstOf(me, 'cash');
+  const s = openSheet(`<form id="mm">${sheetHead(give ? `Gave money to ${name}` : `${name} gave me money`)}
+    <p class="lead">${give ? `Now with you: ${inr(Math.max(0, L.balance))} of ${esc(name)}’s money.` : `This adds to ${esc(name)}’s money with you.`}</p>
+    <label class="amount-field"><b>₹</b><input name="amount" inputmode="decimal" value="${give && L.balance > 0 ? L.balance : ''}"></label>
+    <div class="form-label">From</div>${accChips('accountId', from, a => a.bookId === (give ? me : mom))}
+    <div class="form-label">To</div>${accChips('toAccountId', to, a => a.bookId === (give ? mom : me))}
+    <div class="form-label">How</div><div class="chips">${['Cash', 'UPI', 'Net banking'].map(m => chip('mode', m, m, m === 'Cash', MODE_ICON[m])).join('')}</div>
+    <div class="grid2" style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${today()}">`)}${field('Note', `<input name="note" placeholder="optional">`)}</div>
     <div class="sheet-actions"><button type="button" class="btn text" data-act="closeSheet">Cancel</button><button class="btn filled">${ic('check')}Save</button></div></form>`);
-  s.querySelector('#hs').onsubmit = e => {
+  s.querySelector('#mm').onsubmit = e => {
     e.preventDefault();
     const v = readForm(e.target), amt = evalAmount(v.amount);
     if (!(amt > 0)) { snack('Enter the amount'); return; }
     if (!v.accountId || !v.toAccountId) { snack('Choose both accounts'); return; }
-    save('txns', { type: 'transfer', amount: amt, accountId: v.accountId, toAccountId: v.toAccountId, date: v.date || today(), mode: v.mode, note: 'Home expenses paid back', homeSettle: true });
-    buzz(); closeSheet(); snack(`${pName} paid back ${inr(amt)}`);
+    save('txns', { type: 'transfer', amount: amt, accountId: v.accountId, toAccountId: v.toAccountId, date: v.date || today(), mode: v.mode, note: (v.note || '').trim() || (give ? `Given to ${name}` : `From ${name}`) });
+    buzz(); closeSheet(); snack(give ? `Gave ${inr(amt)} to ${name}` : `${name} gave ${inr(amt)}`);
   };
 }
 
-/* ---------- Home dashboard reminder ---------- */
-function homeAttention() {
-  const me = meBook(), v = me ? owedTo(me.id) : 0;
-  return v > 0.005 ? [{ icon: 'house', cls: 'info', title: `${payerName()} owes you ${inr(v)} for home costs`, sub: `${homeLedger().claims.filter(t => t.date.startsWith(thisMonth())).length} home expenses paid by you this month`, go: '#/homecosts' }] : [];
+/* ---------- Home dashboard ---------- */
+function motherHeroLine() {
+  const L = motherLedger();
+  if (!L.mom || Math.abs(L.balance) < 0.005 || (UI.book !== 'all' && UI.book !== meBook()?.id)) return '';
+  return `<a class="hero-label" href="#/mother" style="display:block;margin-top:6px;color:inherit">${ic('house', 'sm')} ${L.balance > 0 ? `Includes ${inr(L.balance)} of ${esc(payerName())}’s money you keep` : `${esc(payerName())} owes you ${inr(-L.balance)} for home costs`} ›</a>`;
 }
+function homeAttention() { return []; }
 
-// "Count home costs from" date on the Home expenses page
+// "Count from" date on the page
 app.addEventListener('change', e => {
   if (e.target.id !== 'home-since' || !e.target.value) return;
-  save('prefs', { ...homePrefs(), id: 'home', since: e.target.value });
-  snack(`Counting home costs from ${fmtDate(e.target.value)}`);
+  saveHomePrefs({ since: e.target.value });
+  snack(`Counting from ${fmtDate(e.target.value)}`);
 });
