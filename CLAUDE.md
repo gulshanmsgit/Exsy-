@@ -17,11 +17,20 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - Chit: `chitInfo(ch)` computes everything (status per member/month, overdue, winners, cash held). Draw picks with
   `crypto.getRandomValues` from members without a win; payout default = monthly × members − commission (₹2,500).
 - Sheets push a history entry so phone Back closes them; `go()` / `openSheet` queue around the async `history.back()`.
+- Firebase: SAME project as ExamSim (examsim-4db41), data under `moneybooks/{code}/…` (`FIRESTORE_ROOT`). The project has
+  ONE rules file: `firestore.rules` here holds ExamSim's block + Exsy's block – keep both whenever either changes.
+- PDFs: `pdf.js` (jsPDF + autotable from cdnjs, lazy). Built-in font has no ₹ → `pt()`/`rs()` write "Rs.".
+  `openShareSheet` builds the PDF on open so `navigator.share` still has the tap's user activation.
+- Payments record `mode` (Cash/UPI/Bank transfer/Cheque) and `accountId` (where the money went); `accForMode` remembers
+  the account last used per mode.
 - Bump `CACHE` in `sw.js` when shipping changes.
 
 ## Status (6 Oct 2026)
 - v1.0 built and tested locally with sample data (all pages and sheets, chit draw/payout maths, lend via card).
-- Firebase project not created yet – owner to create it and paste the config (README "Turn on sync").
+- v1.1: PDF statements + share with reminder (people, chit members, chit group, reports); payment method + "money went
+  to" on chit payments/payouts; ExamSim's Firebase config built in.
+- Owner must publish the combined `firestore.rules` in examsim-4db41 before sync works.
+- Owner asked about an APK: PWABuilder (pwabuilder.com) once Pages is live – README "Android app".
 - GitHub Pages must be switched on by the owner (Settings → Pages → main / root).
 
 ## Owner preferences

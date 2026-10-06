@@ -25,17 +25,32 @@ On a phone: browser menu → **Add to Home screen** to install it like an app.
 GitHub → this repo → **Settings → Pages** → Source: **Deploy from a branch** → Branch **main**, folder **/ (root)** → Save.
 After a minute the app is at `https://gulshanmsgit.github.io/Exsy-/`.
 
-## Turn on sync (Firebase, free plan)
+## Turn on sync (uses the same Firebase project as ExamSim)
 
-1. <https://console.firebase.google.com> → **Add project** (e.g. `exsy-money`; Google Analytics not needed).
-2. **Build → Firestore Database → Create database** → production mode → a location near you (e.g. `asia-south1`).
-3. **Firestore → Rules** → paste the contents of [`firestore.rules`](firestore.rules) → **Publish**.
-4. **Project settings → Your apps → Web (`</>`)** → register the app → copy the `firebaseConfig` block.
-5. In Exsy: **More → Sync & devices** → paste the config → **Create my sync code**. Your entries are copied to the cloud.
-6. **Copy device link** and open it once on your other phone/laptop – it opens straight into the same money book.
+Exsy is already connected to the ExamSim Firebase project (`examsim-4db41`); its data lives in a separate top-level
+collection, `moneybooks/…`, so it never mixes with ExamSim's `workspaces/…`.
 
-Keep the sync code / device link private: whoever has it can open the book. (The config can also be pasted into
-`FIREBASE_CONFIG` in `app.js` so other devices only need the code.)
+1. **Publish the combined rules once:** <https://console.firebase.google.com> → project **examsim-4db41** →
+   **Firestore Database → Rules** → replace everything with the contents of [`firestore.rules`](firestore.rules) → **Publish**.
+   This file contains ExamSim's rules *and* Exsy's. A project has only one rules file, so always publish the complete
+   file – publishing an older ExamSim-only file would lock Exsy out (and the other way round).
+2. In Exsy: **More → Sync & devices → Create my sync code**. Entries already on the device are copied to the cloud.
+3. **Copy device link** and open it once on your other phone or laptop – it opens straight into the same money book.
+
+Keep the sync code / device link private: whoever has it can open the book.
+
+## PDF statements and reminders
+
+- **People → a person → Remind / Statement:** edit the reminder text, then **Share PDF + message** (pick WhatsApp),
+  **Download PDF**, or **Message only**.
+- **Chit → member → Statement PDF**, and the PDF icon at the top of a chit for the whole group report.
+- **Reports → PDF** for the month/year shown.
+
+## Android app (APK)
+
+Once GitHub Pages is live, go to <https://www.pwabuilder.com>, enter `https://gulshanmsgit.github.io/Exsy-/`,
+choose **Package for stores → Android** and download the package; the `.apk` inside installs on the phone
+(allow "install unknown apps"). Simpler alternative: Chrome → ⋮ → **Add to Home screen / Install app**.
 
 ## Files
 
@@ -46,6 +61,7 @@ Keep the sync code / device link private: whoever has it can open the book. (The
 | `app.js` | Storage (this device / Firestore), balances, rendering, helpers |
 | `pages.js` | Entry form, Home, Entries, Accounts, People |
 | `chit.js` | Chit groups, collections, draw, payouts |
+| `pdf.js` | PDF statements/reports and the share sheet |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline |
 | `firestore.rules` | Firestore security rules |

@@ -8,8 +8,16 @@
    ============================================================ */
 const APP_VERSION = '1.0.0';
 const FIREBASE_VERSION = '10.12.2';
-// Paste the Firebase web config here after creating the project (or paste it once in the app's Sync screen).
-const FIREBASE_CONFIG = null;
+// Same Firebase project as ExamSim; Exsy keeps its data under its own top-level collection (FIRESTORE_ROOT).
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDTPg4sq2L8aVo2EkFexAF-qRWaKCVxl5g",
+  authDomain: "examsim-4db41.firebaseapp.com",
+  projectId: "examsim-4db41",
+  storageBucket: "examsim-4db41.firebasestorage.app",
+  messagingSenderId: "490684195078",
+  appId: "1:490684195078:web:04e437f92a7dae88613e87"
+};
+const FIRESTORE_ROOT = 'moneybooks';
 const COLLS = ['books', 'accounts', 'txns', 'categories', 'stores', 'people', 'recurring', 'chits', 'chitMembers', 'chitPayments', 'chitDraws', 'prefs'];
 const LS = { mode: 'exsy.mode', code: 'exsy.code', cfg: 'exsy.fbcfg', local: 'exsy.local', pin: 'exsy.pin', theme: 'exsy.theme', ui: 'exsy.ui', last: 'exsy.last' };
 
@@ -65,7 +73,7 @@ const randCode = (n = 32) => { const abc = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLM
 
 /* ---------- icons (Material Symbols, only the glyphs we use are downloaded) ---------- */
 const ICON_CHOICES = ['shopping_basket', 'nutrition', 'local_drink', 'cleaning_services', 'medication', 'bolt', 'water_drop', 'local_fire_department', 'wifi', 'local_gas_station', 'directions_bus', 'restaurant', 'checkroom', 'school', 'house', 'account_balance', 'shield', 'redeem', 'temple_hindu', 'build', 'spa', 'movie', 'category', 'payments', 'family_restroom', 'percent', 'currency_exchange', 'groups', 'savings', 'shopping_cart', 'storefront', 'shopping_bag', 'local_shipping', 'store', 'local_pharmacy', 'delivery_dining', 'language', 'more_horiz', 'pets', 'child_care', 'sports_cricket', 'flight', 'train', 'two_wheeler', 'directions_car', 'phone_iphone', 'tv', 'laptop', 'celebration', 'volunteer_activism', 'work', 'receipt', 'local_cafe', 'bakery_dining', 'egg', 'set_meal', 'lunch_dining', 'local_laundry_service', 'content_cut', 'fitness_center', 'hotel', 'checklist', 'local_hospital', 'agriculture', 'construction', 'card_giftcard', 'person', 'face', 'elderly', 'elderly_woman', 'woman', 'man', 'home_work'];
-const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz'];
+const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description'];
 const ALL_ICONS = new Set([...ICON_CHOICES, ...UI_ICONS]);
 (function loadIconFont() {
   const names = [...ALL_ICONS].sort().join(',');
@@ -115,7 +123,7 @@ const DEFAULT_STORES = [['DMart', 'storefront'], ['Amazon', 'shopping_cart'], ['
 
 /* ============================================================
    Storage: localStorage (this device) or Firestore (sync)
-   Layout in Firestore: workspaces/{syncCode}/{collection}/{id}
+   Layout in Firestore: moneybooks/{syncCode}/{collection}/{id}
    ============================================================ */
 const D = Object.fromEntries(COLLS.map(c => [c, []]));
 let store = null, loaded = new Set(), sigs = {}, storeErr = '';
@@ -145,12 +153,12 @@ async function cloudStore(cfg, ws) {
     fbMods = { F, db };
   }
   const { F, db } = fbMods;
-  const ref = (c, id) => F.doc(db, 'workspaces', ws, c, id);
+  const ref = (c, id) => F.doc(db, FIRESTORE_ROOT, ws, c, id);
   const unsubs = [];
   return {
     kind: 'cloud',
     start(cb, err) {
-      for (const c of COLLS) unsubs.push(F.onSnapshot(F.collection(db, 'workspaces', ws, c),
+      for (const c of COLLS) unsubs.push(F.onSnapshot(F.collection(db, FIRESTORE_ROOT, ws, c),
         s => cb(c, s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata.fromCache), e => err(c, e)));
     },
     put: (c, id, d) => F.setDoc(ref(c, id), clean(d)),
@@ -419,8 +427,9 @@ function wireMore(root) {
 function monthNav(key, value, label) {
   return `<div class="month-nav"><button class="icon-btn" data-act="monthStep" data-k="${key}" data-d="-1" aria-label="Previous">${ic('chevron_left')}</button><b>${esc(label)}</b><button class="icon-btn" data-act="monthStep" data-k="${key}" data-d="1" aria-label="Next">${ic('chevron_right')}</button></div>`;
 }
-function download(name, text, type) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
+const download = (name, text, type) => downloadBlob(name, new Blob([text], { type }));
+function downloadBlob(name, blob) {
+  const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);

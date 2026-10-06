@@ -34,15 +34,15 @@ function renderEntry(f) {
     ${PERSON_T.has(ty) ? `<div class="form-label">${ty === 'lend' ? 'Lent to' : ty === 'collect' ? 'Got back from' : ty === 'borrow' ? 'Borrowed from' : 'Repaid to'}</div>
       <div class="chips">${people.map(p => chip('personId', p.id, p.name, p.id === f.personId, 'person')).join('')}${chip('personId', '__new', 'New person', f.personId === '__new' || !people.length, 'person_add')}</div>
       <label class="field ${f.personId === '__new' || !people.length ? '' : 'hide'}" id="ef-newp" style="margin-top:8px"><span>Name</span><input name="newPerson" value="${esc(f.newPerson || '')}" placeholder="e.g. Sister, Ravi"></label>` : ''}
-    <div class="form-label">${ty === 'transfer' ? 'From' : ty === 'income' || ty === 'collect' || ty === 'borrow' ? 'Into account' : 'Paid from'}</div>
+    <div class="form-label">${ty === 'transfer' ? 'From' : ty === 'income' || ty === 'collect' || ty === 'borrow' ? 'Money went to (whose cash / which bank)' : 'Paid from'}</div>
     ${accChips('accountId', f.accountId)}
     ${ty === 'transfer' ? `<div class="form-label">To</div>${accChips('toAccountId', f.toAccountId)}` : ''}
     ${isCat ? `<div class="form-label">Category</div>${usageChips('categoryId', cats, f.categoryId, x.catUse)}` : ''}
     ${ty === 'expense' ? `<div class="form-label">Where (shop)</div>${usageChips('storeId', [{ id: '', name: 'None', icon: '' }, ...D.stores], f.storeId || '', x.storeUse, 8)}
       <div class="form-label">For whom</div>
       <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}</div>` : ''}
-    <div class="form-label">Paid by</div>
-    <div class="chips" id="ef-modes">${MODES.map(m => chip('mode', m, m, f.mode === m)).join('')}</div>
+    <div class="form-label">${IN_T.has(ty) ? 'How did they pay?' : ty === 'transfer' ? 'How' : 'How did you pay?'}</div>
+    <div class="chips" id="ef-modes">${MODES.map(m => chip('mode', m, m, f.mode === m, MODE_ICON[m])).join('')}</div>
     <div class="grid2" style="margin-top:16px">
       ${field('Date', `<input type="date" name="date" value="${esc(f.date || today())}" required>`)}
       ${ty === 'lend' ? field('Give back by (optional)', `<input type="date" name="dueDate" value="${esc(f.dueDate || '')}">`) : field('Note', `<input name="note" value="${esc(f.note || '')}" placeholder="optional">`)}
@@ -451,7 +451,6 @@ function pagePerson(id) {
   const list = D.txns.filter(t => t.personId === id).sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0));
   let run = num(p.opening);
   const rows = list.map(t => { run += (t.type === 'lend' || t.type === 'repay' ? 1 : -1) * num(t.amount); return { t, run }; }).reverse();
-  const msg = `Hi ${p.name}, just a gentle reminder about ${inr(bal)} pending with me. Please return when you can. Thank you!`;
   const body = `<div class="card primary"><div class="hero-label">${bal > 0 ? `${esc(p.name)} owes you` : bal < 0 ? `You owe ${esc(p.name)}` : 'All settled'}</div>
       <div class="hero-num">${inrAbs(bal)}</div>${p.phone ? `<div class="hero-label">${esc(p.phone)}</div>` : ''}</div>
     <div class="action-row" style="margin-top:12px">
@@ -459,14 +458,15 @@ function pagePerson(id) {
       <button class="act" data-act="addEntry" data-type="collect" data-person="${id}">${ic('south_west')}Got back</button>
       <button class="act" data-act="addEntry" data-type="borrow" data-person="${id}">${ic('south_west')}Borrowed</button>
       <button class="act" data-act="addEntry" data-type="repay" data-person="${id}">${ic('north_east')}Repaid</button>
-      ${bal > 0 ? `<a class="act" href="${waLink(p.phone, msg)}" target="_blank" rel="noopener">${ic('chat')}Remind</a>` : ''}
+      ${bal > 0 ? `<button class="act" data-act="sharePerson" data-id="${id}">${ic('chat')}Remind</button>` : ''}
+      <button class="act" data-act="sharePerson" data-id="${id}">${ic('picture_as_pdf')}Statement</button>
       ${p.phone ? `<a class="act" href="tel:${esc(p.phone)}">${ic('call')}Call</a>` : ''}
       <button class="act" data-act="editPerson" data-id="${id}">${ic('edit')}Edit</button>
     </div>
     <div class="card flush" style="margin-top:12px">
       ${rows.map(({ t, run }) => `<button class="li" data-act="editEntry" data-id="${t.id}"><span class="avatar" style="--c:${t.type === 'lend' || t.type === 'repay' ? '#c8742a' : '#2e7d5b'}">${ic(TT[t.type].icon)}</span>
         <span class="li-text"><span class="li-title">${TT[t.type].label} ${inr(t.amount)} ${t.type === 'lend' && t.dueDate ? `<span class="tag ${t.dueDate < today() && bal > 0 ? 'bad' : ''}">by ${fmtDay(t.dueDate)}</span>` : ''}</span>
-        <span class="li-sub">${esc([fmtDate(t.date), accLabel(t.accountId, x), t.note].filter(Boolean).join(' · '))}</span></span>
+        <span class="li-sub">${esc([fmtDate(t.date), t.mode, accLabel(t.accountId, x), t.note].filter(Boolean).join(' · '))}</span></span>
         <span class="li-end"><small>balance</small>${run >= 0 ? inr(run) : inrAbs(run) + ' (you owe)'}</span></button>`).join('')}
       ${num(p.opening) ? `<div class="li static"><span class="avatar">${ic('info')}</span><span class="li-text"><span class="li-title">Opening balance</span><span class="li-sub">Before using Exsy</span></span><span class="li-end">${inr(p.opening)}</span></div>` : ''}
       ${!rows.length && !num(p.opening) ? `<div class="empty">No entries with ${esc(p.name)} yet</div>` : ''}

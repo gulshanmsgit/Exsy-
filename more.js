@@ -34,7 +34,7 @@ function pageReports() {
   const label = mode === 'month' ? fmtMonth(UI.repMonth) : mode === 'year' ? UI.repYear : 'All time';
   const body = `<div class="seg">${[['month', 'Month'], ['year', 'Year'], ['all', 'All time']].map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="repMode" data-k="${k}">${mode === k ? ic('check') : ''}${l}</button>`).join('')}</div>
     <div class="filters" style="justify-content:space-between">${mode === 'all' ? '<b style="font-weight:500;padding:8px 4px">All time</b>' : monthNav(mode === 'month' ? 'repMonth' : 'repYear', key, label)}
-      <div class="btn-row"><button class="btn text sm" data-act="exportCsv">${ic('download')}CSV</button></div></div>
+      <div class="btn-row"><button class="btn tonal sm" data-act="shareReport">${ic('picture_as_pdf')}PDF</button><button class="btn text sm" data-act="exportCsv">${ic('download')}CSV</button></div></div>
     ${bookFilterChips()}
     <div class="card primary" style="margin-top:12px"><div class="stats">
       <div class="stat"><span>Income</span><b>${inr(earned)}</b></div><div class="stat"><span>Spent</span><b>${inr(spent)}</b></div>
@@ -465,7 +465,10 @@ const ACT = {
   chitMonth: (d, el) => { if (el.disabled) return; const ci = chitInfo(D.chits.find(c => c.id === d.id)); UI.chitMonth[d.id] = clamp(chitMonthSel(ci) + +d.d, 1, ci.months); scheduleRender(); },
   chitGoMonth: d => { UI.chitMonth[d.id] = +d.m; setUI('chitTab', 'month'); },
   payCell: d => openPayCell(d.id, d.mb, +d.m),
-  quickPay: d => quickPay(d.id, d.mb, +d.m),
+  sharePerson: d => sharePerson(d.id),
+  shareMember: d => shareChitMember(d.id),
+  shareChit: d => shareChitGroup(d.id),
+  shareReport: () => shareReport(),
   draw: d => openDraw(d.id, +d.m),
   drawManual: d => openDrawManual(d.id, +d.m),
   payout: d => openPayout(d.id),

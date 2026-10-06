@@ -98,7 +98,7 @@ function pageChit(id) {
       </div></div>
     <div class="seg" style="margin-top:16px">${tabs.map(([k, l, i]) => `<button class="${tab === k ? 'on' : ''}" data-act="chitTab" data-k="${k}">${tab === k ? ic('check') : ic(i)}<span>${l}</span></button>`).join('')}</div>
     <div style="margin-top:12px">${tab === 'grid' ? chitGrid(ci) : tab === 'members' ? chitMembers(ci) : tab === 'draws' ? chitDraws(ci) : chitMonth(ci)}</div>`;
-  return { title: ch.name, back: '#/chits', body, fabAct: 'editChit', fabData: `data-id="${id}"`, fabIcon: 'edit', fabLabel: 'Edit chit', actions: '' };
+  return { title: ch.name, back: '#/chits', body, fabAct: 'editChit', fabData: `data-id="${id}"`, fabIcon: 'edit', fabLabel: 'Edit chit', actions: `<button class="icon-btn" data-act="shareChit" data-id="${id}" title="Chit report PDF" aria-label="Chit report PDF">${ic('picture_as_pdf')}</button>` };
 }
 const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 
@@ -128,10 +128,10 @@ function chitMonth(ci) {
     return `<div class="li" style="padding-right:8px"><button class="li" style="padding:0;flex:1;min-width:0;border:0" data-act="payCell" data-id="${ch.id}" data-mb="${mb.id}" data-m="${m}">
       <span class="avatar" style="--c:${colorFor(mb.name)}">${esc(initials(mb.name))}</span>
       <span class="li-text"><span class="li-title">${esc(mb.name)} ${won ? `<span class="tag ok" title="Won month ${won.month}">${ic('emoji_events')}M${won.month}</span>` : ''}</span>
-      <span class="li-sub"><span class="tag ${cls}">${lbl}</span> ${p > 0 ? inr(p) + (p < ci.monthly ? ' of ' + inr(ci.monthly) : '') : ''}</span></span></button>
+      <span class="li-sub"><span class="tag ${cls}">${lbl}</span> ${p > 0 ? inr(p) + (p < ci.monthly ? ' of ' + inr(ci.monthly) : '') + ' · ' + esc(payModesText(ci.pays.filter(x => x.memberId === mb.id && x.month === m))) : ''}</span></span></button>
       ${st === 'paid' ? `<span class="ms pos" style="margin:0 8px">check_circle</span>` : `
         ${mb.phone && (st === 'over' || st === 'due' || st === 'part') ? `<a class="icon-btn" href="${waLink(mb.phone, msg)}" target="_blank" rel="noopener" aria-label="WhatsApp reminder">${ic('chat')}</a>` : ''}
-        <button class="btn tonal sm" data-act="quickPay" data-id="${ch.id}" data-mb="${mb.id}" data-m="${m}">${ic('check')}Paid</button>`}
+        <button class="btn tonal sm" data-act="payCell" data-id="${ch.id}" data-mb="${mb.id}" data-m="${m}">${ic('check')}Paid</button>`}
     </div>`;
   }).join('');
   return `<div class="card" style="padding:8px 8px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -140,7 +140,7 @@ function chitMonth(ci) {
       <button class="icon-btn" data-act="chitMonth" data-id="${ch.id}" data-d="1" ${m >= ci.months ? 'disabled' : ''} aria-label="Next month">${ic('chevron_right')}</button></div>
     ${drawCard ? `<div style="margin-top:12px">${drawCard}</div>` : ''}
     <div class="card flush" style="margin-top:12px">${rows || `<div class="empty">Add members in the Members tab</div>`}</div>
-    <p class="muted" style="margin:10px 4px">Tap “Paid” to record a full ${inr(ci.monthly)} cash payment for today, or tap a name for part payments, online payments and other dates.</p>`;
+    <p class="muted" style="margin:10px 4px">Tap “Paid” to record a payment – choose cash, UPI or bank and where the money went. Part payments are fine.</p>`;
 }
 
 function chitGrid(ci) {
@@ -225,18 +225,33 @@ function openChitForm(id) {
   });
 }
 
-function lastChitAcc() { const id = lsGet('exsy.chitAcc', ''); return id === '' || D.accounts.some(a => a.id === id) ? id : ''; }
+/* ---------- how money was paid, and which cash/bank it went to ---------- */
+const PAY_MODES = ['Cash', 'UPI', 'Bank transfer', 'Cheque'];
+const MODE_ICON = { Cash: 'payments', UPI: 'phone_android', 'Bank transfer': 'account_balance', 'Net banking': 'account_balance', Card: 'credit_card', Cheque: 'receipt' };
+// Each payment method remembers the account it was last used with (Cash -> my cash, UPI -> SBI, ...)
+function accForMode(mode) {
+  const mem = lsGet('exsy.modeAcc', {});
+  if (mem[mode] !== undefined && (mem[mode] === '' || D.accounts.some(a => a.id === mem[mode] && !a.archived))) return mem[mode];
+  const me = meBook()?.id, want = mode === 'Cash' ? 'cash' : 'bank';
+  return (D.accounts.find(a => a.type === want && a.bookId === me && !a.archived) || D.accounts.find(a => a.type === want && !a.archived) || {}).id || '';
+}
+function rememberPay(mode, acc) { const m = lsGet('exsy.modeAcc', {}); m[mode] = acc || ''; lsSet('exsy.modeAcc', m); lsSet('exsy.chitMode', mode); }
 function accChipsOptional(name, sel) {
-  return `<div class="chip-group">${chip(name, '', 'Not tracked', !sel, 'more_horiz')}</div>` + accChips(name, sel, a => a.type !== 'card' && a.type !== 'invest');
+  return accChips(name, sel, a => a.type !== 'card' && a.type !== 'invest') + `<div class="chip-group" style="margin-top:8px">${chip(name, '', 'Don\u2019t track', !sel, 'more_horiz')}</div>`;
 }
-
-function quickPay(chId, mbId, m) {
-  const ch = D.chits.find(c => c.id === chId), ci = chitInfo(ch), rest = ci.monthly - ci.paidOf(mbId, m);
-  if (rest <= 0) return;
-  const acc = lastChitAcc() || (D.accounts.find(a => a.type === 'cash' && a.bookId === meBook()?.id) || {}).id || '';
-  const p = save('chitPayments', { chitId: chId, memberId: mbId, month: m, amount: rest, date: today(), mode: 'Cash', accountId: acc });
-  snack(`${ci.memberById.get(mbId)?.name}: ${inr(rest)} received`, { label: 'Undo', fn: () => removeDoc('chitPayments', p.id) });
+function payMethodFields(accLabelText, mode) {
+  mode = mode || lsGet('exsy.chitMode', 'Cash');
+  return `<div class="form-label">How was it paid?</div><div class="chips">${PAY_MODES.map(m => chip('mode', m, m, m === mode, MODE_ICON[m])).join('')}</div>
+    <div class="form-label">${accLabelText}</div>${accChipsOptional('accountId', accForMode(mode))}`;
 }
+function wirePayMethod(form) {
+  form.addEventListener('change', e => {
+    if (e.target.name !== 'mode') return;
+    const r = form.querySelector(`input[name=accountId][value="${accForMode(e.target.value)}"]`);
+    if (r) r.checked = true;
+  });
+}
+const payModesText = list => [...new Set(list.map(p => p.mode).filter(Boolean))].join(', ');
 
 function openPayCell(chId, mbId, m) {
   const ch = D.chits.find(c => c.id === chId); if (!ch) return;
@@ -249,18 +264,18 @@ function openPayCell(chId, mbId, m) {
       <span class="li-text"><span class="li-title">${inr(p.amount)}</span><span class="li-sub">${esc([fmtDate(p.date), p.mode, p.accountId && accLabel(p.accountId, x), p.note].filter(Boolean).join(' · '))}</span></span>
       <button type="button" class="icon-btn" data-delpay="${p.id}" aria-label="Delete payment">${ic('delete')}</button></div>`).join('')}</div>` : ''}
     ${rest > 0 ? `<label class="amount-field"><b>₹</b><input name="amount" inputmode="decimal" value="${rest}"></label>
-      <div class="form-label">Paid by</div><div class="chips">${['Cash', 'UPI', 'Net banking', 'Cheque'].map(md => chip('mode', md, md, md === 'Cash')).join('')}</div>
-      <div class="form-label">Money is now in</div>${accChipsOptional('accountId', lastChitAcc())}
-      <div class="grid2" style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${today()}">`)}${field('Note', `<input name="note" placeholder="optional">`)}</div>` : ''}
+      ${payMethodFields('Money went to (whose cash / which bank)')}
+      <div class="grid2" style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${today()}">`)}${field('Note / UPI ref', `<input name="note" placeholder="optional">`)}</div>` : ''}
     <div class="sheet-actions"><button type="button" class="btn text" data-act="closeSheet">Close</button>${rest > 0 ? `<button class="btn filled">${ic('check')}Save payment</button>` : ''}</div></form>`);
   const f = s.querySelector('#cp');
+  wirePayMethod(f);
   f.onsubmit = e => {
     e.preventDefault();
     const v = readForm(f), amt = evalAmount(v.amount);
     if (!(amt > 0)) { snack('Enter the amount'); return; }
     save('chitPayments', { chitId: chId, memberId: mbId, month: m, amount: amt, date: v.date || today(), mode: v.mode, accountId: v.accountId || '', note: (v.note || '').trim() });
-    lsSet('exsy.chitAcc', v.accountId || '');
-    closeSheet(); snack(`${mb?.name}: ${inr(amt)} saved`);
+    rememberPay(v.mode, v.accountId);
+    closeSheet(); snack(`${mb?.name}: ${inr(amt)} by ${v.mode} saved`);
   };
   $$('[data-delpay]', s).forEach(b => b.onclick = () => { closeSheet(); removeMany([['chitPayments', b.dataset.delpay]], 'Payment deleted'); });
 }
@@ -322,13 +337,14 @@ function openPayout(drawId) {
   const s = openSheet(`<form id="po">${sheetHead(`Pay ${w?.name || 'winner'}`)}
     <p class="lead">Month ${d.month} prize: ${inr(d.payout + num(d.commission))} pot − ${inr(d.commission)} commission.</p>
     <label class="amount-field"><b>₹</b><input name="payout" inputmode="decimal" value="${d.payout}"></label>
-    <div class="form-label">Paid from</div>${accChipsOptional('accountId', lastChitAcc())}
-    <div class="form-label">Paid by</div><div class="chips">${['Cash', 'UPI', 'Net banking', 'Cheque'].map(md => chip('mode', md, md, md === 'Cash')).join('')}</div>
+    ${payMethodFields('Paid from (whose cash / which bank)')}
     <div style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${today()}">`)}</div>
     <div class="sheet-actions"><button type="button" class="btn text" data-act="closeSheet">Cancel</button><button class="btn filled">${ic('check')}Mark as paid</button></div></form>`);
+  wirePayMethod(s.querySelector('#po'));
   s.querySelector('#po').onsubmit = e => {
     e.preventDefault(); const v = readForm(e.target), amt = evalAmount(v.payout);
     if (!(amt > 0)) return;
+    rememberPay(v.mode, v.accountId);
     save('chitDraws', { ...d, payout: amt, commission: round2(d.payout + num(d.commission) - amt), paid: true, payoutDate: v.date || today(), payoutAccountId: v.accountId || '', payoutMode: v.mode });
     closeSheet(); snack(`Paid ${inr(amt)} to ${w?.name}`);
   };
@@ -361,6 +377,7 @@ function openMemberInfo(mbId) {
     <div class="btn-row" style="margin-top:12px">
       ${pending.length && mb.phone ? `<a class="btn tonal" href="${waLink(mb.phone, msg)}" target="_blank" rel="noopener">${ic('chat')}WhatsApp reminder</a>` : ''}
       ${mb.phone ? `<a class="btn outlined" href="tel:${esc(mb.phone)}">${ic('call')}Call</a>` : ''}
+      <button type="button" class="btn tonal" data-act="shareMember" data-id="${mb.id}">${ic('picture_as_pdf')}Statement PDF</button>
     </div>
     <div class="form-label">Statement</div>
     <div class="card flush">${Array.from({ length: ci.months }, (_, i) => {
