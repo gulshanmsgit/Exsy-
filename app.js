@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {

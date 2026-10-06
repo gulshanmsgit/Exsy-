@@ -252,3 +252,12 @@ function pageCollect() {
     <p class="muted" style="margin:10px 4px">Most overdue first. “Paid” records the oldest pending month; tap a name for the full statement.</p>`;
   return { title: 'Collection day', back: '#/chits', body, fab: false };
 }
+
+/* ============================================================
+   Keep the screen current: redraw when the app comes back to the front, and when the date changes
+   (pay days, due dates and "today" depend on it)
+   ============================================================ */
+let shownDay = today();
+document.addEventListener('visibilitychange', () => { if (!document.hidden && store) { shownDay = today(); scheduleRender(); } });
+window.addEventListener('pageshow', () => { if (store) scheduleRender(); });
+setInterval(() => { if (today() !== shownDay && store) { shownDay = today(); scheduleRender(); } }, 60e3);

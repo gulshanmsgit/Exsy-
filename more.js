@@ -443,6 +443,7 @@ const ACT = {
   search: () => openSearch(),
   motherMove: d => openMotherMove(d.dir),
   motherSalary: () => saveSalary(),
+  motherSalaryOff: () => stopSalary(),
   homePayer: d => { saveHomePrefs({ payerBook: d.b }); snack(d.b ? `${X().book.get(d.b)?.name}’s money pays for the home` : 'Home costs are only tracked'); },
   addHomeExpense: () => openEntry({ forWhom: 'home' }),
   privacy: () => togglePrivacy(),

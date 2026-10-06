@@ -51,8 +51,9 @@ Keep the sync code / device link private: whoever has it can open the book.
 
 One number on **More → Mother's money** (also shown on Home): how much of Mother's money you are keeping.
 
-- **+ her monthly money:** set the amount once (e.g. ₹5,000 from Oct 2026, on the 1st). It is added automatically
-  every month – the money can stay in your account, no entry needed.
+- **+ her monthly money:** set the amount and the first month once (e.g. ₹5,000 from Sep 2026, given on the 1st of
+  the next month – paid in October = September's money). Saving again replaces the setting. Added automatically each
+  month – the money can stay in your account, no entry needed.
 - **− home costs you pay:** add an Expense with **For whom: Home** from your own account; the switch
   **“Take it from Mother's money”** (right under *For whom*) is on. Switch it off for the few that are yours.
 - **− money you give her / + money she gives you:** the two buttons on the page (or any transfer between your

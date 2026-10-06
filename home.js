@@ -17,10 +17,20 @@ function homePayer() {
   return (D.books.find(b => /mother|amma|mom/i.test(b.name)) || {}).id || null;
 }
 const payerName = () => X().book.get(homePayer())?.name || 'Mother';
-const salaryPlan = () => (homePrefs().salary || []).slice().sort((a, b) => a.from.localeCompare(b.from));
-const salaryFor = month => { let amt = 0; for (const s of salaryPlan()) if (s.from <= month) amt = num(s.amount); return amt; };
-// Counting starts here (older entries were settled before Exsy)
-const homeSince = () => homePrefs().since || (salaryPlan()[0] ? salaryPlan()[0].from + '-01' : '2026-10-01');
+// Monthly money: ONE setting { from: first month of money, amount }. Saving replaces it.
+// (Older versions kept a list in `salary`; the latest-starting entry was the corrected one.)
+function monthlyPlan() {
+  const p = homePrefs();
+  if (p.monthly) return p.monthly.amount ? p.monthly : null;
+  const old = (p.salary || []).slice().sort((a, b) => a.from.localeCompare(b.from)).pop();
+  return old && num(old.amount) ? { from: old.from, amount: num(old.amount) } : null;
+}
+// Paid the next month: the money for September is given on the pay day in October
+const paidNextMonth = () => homePrefs().arrears !== false;
+const payDay = () => clamp(+homePrefs().salaryDay || 1, 1, 28);
+const payDateFor = workMonth => `${paidNextMonth() ? addMonths(workMonth, 1) : workMonth}-${pad(payDay())}`;
+// Entries are counted from here (older ones were settled before Exsy); independent of the monthly money
+const homeSince = () => homePrefs().since || '2026-10-01';
 const claimApplies = (accountId, forWhom) => { const p = homePayer(), b = X().acc.get(accountId)?.bookId; return !!p && forWhom === 'home' && !!b && b !== p; };
 const isHomeClaim = t => t.type === 'expense' && t.homeClaim !== false && t.date >= homeSince() && claimApplies(t.accountId, t.forWhom);
 
@@ -28,14 +38,15 @@ let homeMemo = { v: -1 };
 function motherLedger() {
   if (homeMemo.v === VER) return homeMemo;
   const x = X(), mom = homePayer(), me = meBook()?.id, since = homeSince(), months = new Map();
-  const row = k => months.get(k) || months.set(k, { salary: 0, home: 0, given: 0, got: 0 }).get(k);
-  const L = { v: VER, mom, months, claims: [], moves: [], salary: 0, home: 0, given: 0, got: 0 };
+  const row = k => months.get(k) || months.set(k, { salary: 0, salaryFor: [], home: 0, given: 0, got: 0 }).get(k);
+  const L = { v: VER, mom, months, claims: [], moves: [], salary: 0, home: 0, given: 0, got: 0, next: null };
   if (mom) {
-    // monthly money: from the first planned month up to this month (this month once its day has come)
-    const plan = salaryPlan(), day = +homePrefs().salaryDay || 1, cur = thisMonth();
-    if (plan.length) for (let k = plan[0].from < since.slice(0, 7) ? since.slice(0, 7) : plan[0].from; k <= cur; k = addMonths(k, 1)) {
-      if (k === cur && +today().slice(8) < day) break;
-      const a = salaryFor(k); if (a) { row(k).salary += a; L.salary += a; }
+    // monthly money: one amount for every month from plan.from, added on its pay day (next month by default)
+    const plan = monthlyPlan(), t0 = today();
+    if (plan) for (let w = plan.from; ; w = addMonths(w, 1)) {
+      const pd = payDateFor(w);
+      if (pd > t0) { L.next = { work: w, date: pd, amount: num(plan.amount) }; break; }
+      const r = row(pd.slice(0, 7)); r.salary += num(plan.amount); r.salaryFor.push(w); L.salary += num(plan.amount);
     }
     for (const t of D.txns) {
       if (t.date < since) continue;
@@ -71,8 +82,8 @@ function balanceText(L, name) {
 function pageMother() {
   const x = X(), L = motherLedger(), name = payerName(), p = homePrefs();
   if (!L.mom) return { title: 'Mother’s money', back: '#/more', fab: false, body: `<div class="card"><p>Choose whose money pays for the home:</p>${payerChips(null)}</div>` };
-  const bt = balanceText(L, name), k = thisMonth(), m = L.months.get(k) || { salary: 0, home: 0, given: 0, got: 0 };
-  const plan = salaryPlan(), curSal = salaryFor(k);
+  const bt = balanceText(L, name), k = thisMonth(), m = L.months.get(k) || { salary: 0, salaryFor: [], home: 0, given: 0, got: 0 };
+  const plan = monthlyPlan(), shortMon = w => MON[+w.slice(5, 7) - 1];
   const stmt = [...L.months].sort((a, b) => b[0].localeCompare(a[0]));
   let run = L.balance;
   const stmtRows = stmt.map(([mk, r]) => { const end = run; run = round2(run - (r.salary - r.home - r.given + r.got)); return { mk, r, end }; });
@@ -84,26 +95,29 @@ function pageMother() {
         <button class="btn tonal" data-act="motherMove" data-dir="get">${ic('south_west')}${esc(name)} gave me</button></div></div>
 
     <div class="card" style="margin-top:12px"><div class="card-title">${ic('today')}This month · ${fmtMonth(k)}</div>
-      <div class="kv"><span>+ Monthly money for ${esc(name)}</span><b class="pos">${m.salary ? inr(m.salary) : curSal ? `${inr(curSal)} on the ${ordinal(+p.salaryDay || 1)}` : 'not set'}</b></div>
+      <div class="kv"><span>+ Monthly money${m.salaryFor.length ? ` (${m.salaryFor.map(shortMon).join(', ')} money)` : ''}</span><b class="pos">${m.salary ? inr(m.salary) : L.next ? `${inr(L.next.amount)} on ${fmtDay(L.next.date)}` : 'not set'}</b></div>
       <div class="kv"><span>− Home costs you paid</span><b>${inr(m.home)}</b></div>
       <div class="kv"><span>− Given to ${esc(name)}</span><b>${inr(m.given)}</b></div>
       ${m.got ? `<div class="kv"><span>+ ${esc(name)} gave you</span><b class="pos">${inr(m.got)}</b></div>` : ''}
     </div>
 
     <div class="card" style="margin-top:12px"><div class="card-title">${ic('payments')}${esc(name)}’s monthly money</div>
-      <p class="muted" style="margin-bottom:12px">The fixed amount you give ${esc(name)} each month. It is added here automatically – no entry needed, the money can stay in your account.</p>
+      ${plan ? `<div class="banner info" style="margin-bottom:12px">${ic('info')}<div><b>${inr(plan.amount)}</b> for every month from <b>${fmtMonth(plan.from)}</b>, given on the ${ordinal(payDay())}${paidNextMonth() ? ' of the next month' : ''}.
+        ${L.next ? `<br>Next: ${shortMon(L.next.work)} money on ${fmtDate(L.next.date)}.` : ''}</div></div>`
+        : `<p class="muted" style="margin-bottom:12px">The fixed amount you give ${esc(name)} each month. It is added here automatically – no entry needed, the money can stay in your account.</p>`}
       <div class="grid3">
-        ${field('Amount each month', `<input id="mo-amt" inputmode="decimal" value="${curSal || ''}" placeholder="e.g. 5000">`)}
-        ${field('From month', `<input id="mo-from" type="month" value="${esc(plan.filter(s => s.from <= k).pop()?.from || k)}">`)}
-        ${field('Day', `<input id="mo-day" type="number" min="1" max="28" value="${esc(p.salaryDay || 1)}">`)}
+        ${field('Amount each month', `<input id="mo-amt" inputmode="decimal" value="${plan ? plan.amount : ''}" placeholder="e.g. 5000">`)}
+        ${field('First month of money', `<input id="mo-from" type="month" value="${esc(plan ? plan.from : addMonths(k, -1))}">`)}
+        ${field('Given on day', `<input id="mo-day" type="number" min="1" max="28" value="${payDay()}">`)}
       </div>
-      <div class="btn-row" style="margin-top:12px"><button class="btn filled" data-act="motherSalary">${ic('check')}Save</button>
-        ${plan.length > 1 ? `<span class="muted" style="align-self:center">Earlier: ${plan.slice(0, -1).map(s => `${inr(s.amount)} from ${fmtMonth(s.from)}`).join(', ')}</span>` : ''}</div>
+      <label class="switch-row" style="margin-top:8px"><span>Given the next month <small class="muted" style="display:block">e.g. paid in October = September’s money</small></span><input type="checkbox" id="mo-next" ${paidNextMonth() ? 'checked' : ''}></label>
+      <div class="btn-row" style="margin-top:8px"><button class="btn filled" data-act="motherSalary">${ic('check')}Save</button>
+        ${plan ? `<button class="btn text danger" data-act="motherSalaryOff">Stop monthly money</button>` : ''}</div>
     </div>
 
     ${stmtRows.length ? `<div class="section-head" style="margin-top:12px"><h2>Month by month</h2></div>
     <div class="card flush">${stmtRows.map(({ mk, r, end }) => `<div class="li static"><span class="li-text"><span class="li-title">${fmtMonth(mk)}</span>
-      <span class="li-sub">${[r.salary && `+${inr(r.salary)} money`, r.home && `−${inr(r.home)} home`, r.given && `−${inr(r.given)} given`, r.got && `+${inr(r.got)} from ${esc(name)}`].filter(Boolean).join(' · ')}</span></span>
+      <span class="li-sub" style="white-space:normal">${[r.salary && `+${inr(r.salary)} ${r.salaryFor.map(shortMon).join(', ')} money`, r.home && `−${inr(r.home)} home`, r.given && `−${inr(r.given)} given`, r.got && `+${inr(r.got)} from ${esc(name)}`].filter(Boolean).join(' · ')}</span></span>
       <span class="li-end"><small>${end >= 0 ? 'with you' : 'owes you'}</small>${inrAbs(end)}</span></div>`).join('')}</div>` : ''}
 
     <div class="section-head" style="margin-top:12px"><h2>Home costs · ${fmtMonth(k)}</h2><span class="muted">${inr(sum(homeMonth, t => t.amount))}</span></div>
@@ -121,10 +135,16 @@ function payerChips(cur) {
 }
 function saveSalary() {
   const amt = evalAmount($('#mo-amt').value), from = $('#mo-from').value || thisMonth(), day = clamp(+$('#mo-day').value || 1, 1, 28);
-  if (isNaN(amt)) return snack('Enter the amount');
-  const plan = salaryPlan().filter(s => s.from !== from).concat(amt ? [{ from, amount: amt }] : []);
-  saveHomePrefs({ salary: plan, salaryDay: day });
-  buzz(); snack(amt ? `${payerName()}’s money: ${inr(amt)} a month from ${fmtMonth(from)}` : 'Monthly money removed');
+  if (!(amt > 0)) return snack('Enter the amount');
+  // replaces the old setting completely, so a wrong start month is gone
+  saveHomePrefs({ monthly: { from, amount: amt }, salary: [], salaryDay: day, arrears: !!$('#mo-next')?.checked });
+  render();
+  buzz(); snack(`${payerName()}’s money: ${inr(amt)} for every month from ${fmtMonth(from)}`);
+}
+function stopSalary() {
+  confirmSheet({ title: 'Stop monthly money?', ok: 'Stop', danger: true,
+    text: `All monthly money for ${esc(payerName())} is removed from the balance (entries, gifts and home costs stay).`,
+    onOk: () => { saveHomePrefs({ monthly: { from: '', amount: 0 }, salary: [] }); snack('Monthly money stopped'); } });
 }
 
 /* ---------- giving / receiving ---------- */

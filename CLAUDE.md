@@ -29,7 +29,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - `extras.js`: quick buttons live in `prefs/quick` (`items` array) – no extra Firestore collection; swipe rows are
   `.swipe[data-id]` wrappers from `txRow`; `pendingColls`/`lastSyncAt` fed by `onData` (snapshots with metadata changes);
   `scheduleRender` has a timer fallback because rAF stops in background tabs.
-- `home.js` (Mother's money): `prefs/home` {payerBook, salary:[{from,amount}], salaryDay, since}. `motherLedger()` =
+- `home.js` (Mother's money): `prefs/home` {payerBook, monthly:{from,amount} (one setting, Save replaces; legacy `salary` list read as its latest entry), salaryDay, arrears (default true: month M's money is added on the pay day of M+1), since}. `motherLedger()` =
   monthly money (computed, no entries) − home claims (expense forWhom 'home' from a non-Mother account, `homeClaim !== false`)
   − transfers Me→Mother + transfers Mother→Me, counted from `since`. Route `#/mother` (`#/homecosts` kept as alias).
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
@@ -41,6 +41,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.6: monthly money fix (Save replaced nothing → wrong start month kept counting), paid-next-month rule, redraw on resume/date change.
 - v1.5: simplified to one "Mother's money" balance (monthly money + home costs + given/received); switch moved up in the entry form.
 - Owner must create the Firestore database in exsy-591a1 and publish `firestore.rules` before sync works.
 - Owner built an APK with PWABuilder (6 Oct 2026); rebuild it once so `share_target` is included. assetlinks.json would
