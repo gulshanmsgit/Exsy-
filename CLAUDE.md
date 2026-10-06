@@ -17,8 +17,11 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - Chit: `chitInfo(ch)` computes everything (status per member/month, overdue, winners, cash held). Draw picks with
   `crypto.getRandomValues` from members without a win; payout default = monthly × members − commission (₹2,500).
 - Sheets push a history entry so phone Back closes them; `go()` / `openSheet` queue around the async `history.back()`.
-- Firebase: SAME project as ExamSim (examsim-4db41), data under `moneybooks/{code}/…` (`FIRESTORE_ROOT`). The project has
-  ONE rules file: `firestore.rules` here holds ExamSim's block + Exsy's block – keep both whenever either changes.
+- Firebase: own project exsy-591a1 (owner created it 6 Oct 2026; NOT shared with ExamSim any more), data under
+  `moneybooks/{code}/…` (`FIRESTORE_ROOT`).
+- `quick.js`: `parsePayText` (bank SMS / UPI text → amount, dir, party, ref, date, mode, account via `last4` or bank name),
+  `entryFromText` routes to chit payment (`matchChitMember`) → person (lend/collect) → shop (expense + `catForStore`).
+  Manifest `share_target` (GET ?text=) → `takeSharedText`/`handleShare`. Balance corrections use category "Balance correction".
 - PDFs: `pdf.js` (jsPDF + autotable from cdnjs, lazy). Built-in font has no ₹ → `pt()`/`rs()` write "Rs.".
   `openShareSheet` builds the PDF on open so `navigator.share` still has the tap's user activation.
 - Payments record `mode` (Cash/UPI/Bank transfer/Cheque) and `accountId` (where the money went); `accForMode` remembers
@@ -29,7 +32,10 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - v1.0 built and tested locally with sample data (all pages and sheets, chit draw/payout maths, lend via card).
 - v1.1: PDF statements + share with reminder (people, chit members, chit group, reports); payment method + "money went
   to" on chit payments/payouts; ExamSim's Firebase config built in.
-- Owner must publish the combined `firestore.rules` in examsim-4db41 before sync works.
+- v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
+- Owner must create the Firestore database in exsy-591a1 and publish `firestore.rules` before sync works.
+- Owner built an APK with PWABuilder (6 Oct 2026); rebuild it once so `share_target` is included. assetlinks.json would
+  need a `gulshanmsgit.github.io` repo (app is in a sub-path) to hide the URL bar.
 - Owner asked about an APK: PWABuilder (pwabuilder.com) once Pages is live – README "Android app".
 - GitHub Pages must be switched on by the owner (Settings → Pages → main / root).
 

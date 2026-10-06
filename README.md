@@ -25,19 +25,27 @@ On a phone: browser menu → **Add to Home screen** to install it like an app.
 GitHub → this repo → **Settings → Pages** → Source: **Deploy from a branch** → Branch **main**, folder **/ (root)** → Save.
 After a minute the app is at `https://gulshanmsgit.github.io/Exsy-/`.
 
-## Turn on sync (uses the same Firebase project as ExamSim)
+## Turn on sync (Firebase project `exsy-591a1`)
 
-Exsy is already connected to the ExamSim Firebase project (`examsim-4db41`); its data lives in a separate top-level
-collection, `moneybooks/…`, so it never mixes with ExamSim's `workspaces/…`.
+The app already contains the config of the Exsy Firebase project. One-time setup in <https://console.firebase.google.com>:
 
-1. **Publish the combined rules once:** <https://console.firebase.google.com> → project **examsim-4db41** →
-   **Firestore Database → Rules** → replace everything with the contents of [`firestore.rules`](firestore.rules) → **Publish**.
-   This file contains ExamSim's rules *and* Exsy's. A project has only one rules file, so always publish the complete
-   file – publishing an older ExamSim-only file would lock Exsy out (and the other way round).
-2. In Exsy: **More → Sync & devices → Create my sync code**. Entries already on the device are copied to the cloud.
-3. **Copy device link** and open it once on your other phone or laptop – it opens straight into the same money book.
+1. **Build → Firestore Database → Create database** → production mode → location `asia-south1 (Mumbai)`.
+2. **Firestore → Rules** → replace everything with [`firestore.rules`](firestore.rules) → **Publish**.
+3. In Exsy: **More → Sync & devices → Create my sync code** (entries already on the device are copied up).
+4. **Copy device link** and open it once on your other phone/laptop – it opens straight into the same money book.
 
 Keep the sync code / device link private: whoever has it can open the book.
+
+## Faster entries
+
+- **Paste bank SMS / UPI message** (Home, or *Paste SMS* in the entry form): Exsy reads amount, paid/received,
+  account (bank name or the last 4 digits you set on the account), date, UPI ref and the person or shop.
+  A name in People becomes *Lent* / *Got back*; a chit member who still owes becomes their chit payment;
+  a shop gets its usual category.
+- **Share into Exsy:** in the installed app, Share a GPay / PhonePe / SMS text → Exsy (needs the app rebuilt in
+  PWABuilder after this update so Android knows Exsy accepts shared text).
+- **Where the money is** (Home): every cash and bank balance; the button on the right counts cash / updates a bank
+  balance and records the difference as a "Balance correction".
 
 ## PDF statements and reminders
 
@@ -62,6 +70,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `pages.js` | Entry form, Home, Entries, Accounts, People |
 | `chit.js` | Chit groups, collections, draw, payouts |
 | `pdf.js` | PDF statements/reports and the share sheet |
+| `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline |
 | `firestore.rules` | Firestore security rules |

@@ -1,10 +1,10 @@
 // Service worker: makes Exsy installable and lets it open without a connection.
 // Network-first for the app's own files, so a new version on GitHub Pages is picked up on the next load.
 // Fonts, the Firebase SDK and the PDF maker (versioned URLs) are cached on first use; Firestore traffic is not touched.
-const CACHE = 'exsy-v2';
+const CACHE = 'exsy-v3';
 const LIB_CACHE = 'exsy-libs';
 const LIB_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'www.gstatic.com', 'cdnjs.cloudflare.com'];
-const SHELL = ['./', './index.html', './app.css', './app.js', './pages.js', './chit.js', './more.js', './pdf.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
+const SHELL = ['./', './index.html', './app.css', './app.js', './pages.js', './chit.js', './more.js', './pdf.js', './quick.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -27,7 +27,8 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (url.origin !== location.origin) return;
-  e.respondWith(fetch(req).then(res => {
+  // no-cache: always ask the server (cheap 304 when unchanged), so an update shows on the next open
+  e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
     if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
     return res;
   }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html'))));

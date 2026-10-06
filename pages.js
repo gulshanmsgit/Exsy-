@@ -27,7 +27,9 @@ function renderEntry(f) {
   const types = ['expense', 'income', 'transfer', 'lend', 'collect', 'borrow', 'repay'];
   const people = D.people.slice().sort(byName);
   const s = openSheet(`<form id="ef" autocomplete="off">
-    ${sheetHead(editing ? 'Edit entry' : 'New entry', editing ? `<button type="button" class="icon-btn" id="ef-del" aria-label="Delete">${ic('delete')}</button>` : '')}
+    ${sheetHead(editing ? 'Edit entry' : 'New entry', editing ? `<button type="button" class="icon-btn" id="ef-del" aria-label="Delete">${ic('delete')}</button>`
+      : `<button type="button" class="btn text sm" id="ef-paste" title="Fill from a bank SMS or UPI message">${ic('content_paste')}Paste SMS</button>`)}
+    ${f.pasteInfo ? `<div class="banner info">${ic('auto_awesome')}<div>Read from the message: ${esc(f.pasteInfo)}. Check and Save.</div></div>` : ''}
     <div class="chips scroll">${types.map(t => chip('type', t, TT[t].label, t === ty, TT[t].icon)).join('')}</div>
     <label class="amount-field"><b>₹</b><input id="ef-amount" name="amount" inputmode="decimal" placeholder="0" value="${esc(f.amount ?? '')}" aria-label="Amount"></label>
     <div class="amount-hint" id="ef-hint">You can type sums like 250+120</div>
@@ -63,7 +65,12 @@ function renderEntry(f) {
     if (n === 'type') { Object.assign(f, readForm(form), { type: e.target.value }); if (f.type !== ty && (ty === 'income' || f.type === 'income')) f.categoryId = ''; renderEntry(f); }
     else if (n === 'accountId') { const m = ACC_T[X().acc.get(e.target.value)?.type]?.mode; const r = m && form.querySelector(`#ef-modes input[value="${m}"]`); if (r) r.checked = true; }
     else if (n === 'personId') s.querySelector('#ef-newp').classList.toggle('hide', e.target.value !== '__new');
+    else if (n === 'storeId' && e.target.value && !form.querySelector('input[name=categoryId]:checked')) {
+      const c = catForStore(e.target.value), r = c && form.querySelector(`input[name=categoryId][value="${c}"]`);
+      if (r) { r.closest('.chip').classList.remove('extra'); r.checked = true; }
+    }
   };
+  const paste = s.querySelector('#ef-paste'); if (paste) paste.onclick = () => openPasteSheet();
   form.onsubmit = e => { e.preventDefault(); submitEntry(f, form, false); };
   const more = s.querySelector('#ef-more'); if (more) more.onclick = () => submitEntry(f, form, true);
   const del = s.querySelector('#ef-del');
@@ -236,6 +243,8 @@ function pageHome() {
           </div>
           ${chitHeld > 0 ? `<div class="hero-label" style="margin-top:10px">${ic('info', 'sm')} Includes ${inr(chitHeld)} chit money you are holding</div>` : ''}
         </div>
+        <div class="btn-row"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>
+        ${balancesCard(x, accs)}
         ${att.length ? `<div class="card flush"><div class="card-title" style="padding:4px 16px 0">${ic('notifications')}Needs attention</div>
           ${att.slice(0, 8).map(a => `<${a.go ? `a href="${a.go}"` : 'div'} class="li ${a.go ? '' : 'static'}" ${a.act && !a.btn ? a.act : ''}>
             <span class="avatar" style="--c:${a.cls === 'bad' ? 'var(--error)' : a.cls === 'warn' ? '#c8742a' : 'var(--tertiary)'}">${ic(a.icon)}</span>
@@ -376,6 +385,7 @@ function openAccountForm(id, bookId) {
       <div class="form-label">Whose money (book)</div><div class="chips">${booksSorted().map(b => chip('bookId', b.id, b.name, a.bookId === b.id, 'person')).join('')}</div>
       <div class="grid2">${field(a.type === 'card' ? 'Outstanding at start (enter as minus, e.g. -4500)' : 'Balance at start', `<input name="opening" inputmode="decimal" value="${esc(a.opening ?? '')}" placeholder="0">`)}
         ${field('As on date', `<input type="date" name="openingDate" value="${esc(a.openingDate || '')}">`)}</div>
+      ${field('Last 4 digits of account / card (optional)', `<input name="last4" inputmode="numeric" maxlength="4" value="${esc(a.last4 || '')}" placeholder="e.g. 1234">`, 'Helps Exsy pick the right account when you paste a bank SMS.')}
       <div class="grid3 ${a.type === 'card' ? '' : 'hide'}" id="af-card">
         ${field('Card limit', `<input name="limit" inputmode="decimal" value="${esc(a.limit ?? '')}">`)}
         ${field('Bill date (day)', `<input name="statementDay" type="number" min="1" max="31" value="${esc(a.statementDay ?? '')}">`)}
@@ -391,7 +401,7 @@ function openAccountForm(id, bookId) {
     const v = readForm(f);
     if (!v.name.trim()) return;
     const op = evalAmount(v.opening);
-    save('accounts', { ...a, name: v.name.trim(), type: v.type, bookId: v.bookId, opening: isNaN(op) ? 0 : op, openingDate: v.openingDate || '', limit: v.limit ? num(v.limit) : '', statementDay: v.statementDay || '', dueDay: v.dueDay || '', value: v.value === '' || v.value == null ? (v.type === 'invest' ? '' : a.value ?? '') : num(v.value), valueDate: v.value !== a.value && v.value ? today() : a.valueDate || '', archived: !!v.archived, order: a.order ?? D.accounts.length });
+    save('accounts', { ...a, name: v.name.trim(), type: v.type, bookId: v.bookId, opening: isNaN(op) ? 0 : op, openingDate: v.openingDate || '', limit: v.limit ? num(v.limit) : '', statementDay: v.statementDay || '', dueDay: v.dueDay || '', value: v.value === '' || v.value == null ? (v.type === 'invest' ? '' : a.value ?? '') : num(v.value), valueDate: v.value !== a.value && v.value ? today() : a.valueDate || '', archived: !!v.archived, last4: (v.last4 || '').replace(/\D/g, ''), order: a.order ?? D.accounts.length });
     closeSheet(); snack('Account saved');
   };
   const del = s.querySelector('#af-del');

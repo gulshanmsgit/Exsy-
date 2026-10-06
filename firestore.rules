@@ -1,14 +1,9 @@
 rules_version = '2';
-// ONE rules file for the whole Firebase project (examsim-4db41), shared by ExamSim and Exsy.
-// Publishing replaces ALL rules, so always publish this complete file – keep both blocks.
+// Firestore rules for the Exsy Firebase project (exsy-591a1).
+// Publish: Firebase console → Firestore Database → Rules → paste this whole file → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ExamSim: each library lives under an unguessable sync code (24+ characters).
-    match /workspaces/{ws}/{coll}/{docId} {
-      allow read, write: if ws.size() >= 24
-        && coll in ['subjects', 'topics', 'sets', 'setq', 'attempts', 'mocks', 'cards', 'days', 'prefs', 'notes'];
-    }
-    // Exsy money book: same idea, separate top-level collection.
+    // Each money book lives under an unguessable sync code (24+ characters).
     // There is no rule for listing the top level, so nobody can browse other books: you need the exact code.
     match /moneybooks/{ws}/{coll}/{docId} {
       allow read, write: if ws.size() >= 24

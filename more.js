@@ -465,6 +465,8 @@ const ACT = {
   chitMonth: (d, el) => { if (el.disabled) return; const ci = chitInfo(D.chits.find(c => c.id === d.id)); UI.chitMonth[d.id] = clamp(chitMonthSel(ci) + +d.d, 1, ci.months); scheduleRender(); },
   chitGoMonth: d => { UI.chitMonth[d.id] = +d.m; setUI('chitTab', 'month'); },
   payCell: d => openPayCell(d.id, d.mb, +d.m),
+  paste: () => openPasteSheet(),
+  countBal: d => openCountSheet(d.id),
   sharePerson: d => sharePerson(d.id),
   shareMember: d => shareChitMember(d.id),
   shareChit: d => shareChitGroup(d.id),
@@ -533,6 +535,7 @@ document.addEventListener('visibilitychange', () => {
    ============================================================ */
 (async function boot() {
   applyTheme();
+  takeSharedText();
   // Device link: #join=<base64 {c: code, f?: firebaseConfig}> signs this device in once
   const m = location.hash.match(/^#join=(.+)$/);
   if (m) {

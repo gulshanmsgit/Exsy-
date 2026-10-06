@@ -239,10 +239,10 @@ function rememberPay(mode, acc) { const m = lsGet('exsy.modeAcc', {}); m[mode] =
 function accChipsOptional(name, sel) {
   return accChips(name, sel, a => a.type !== 'card' && a.type !== 'invest') + `<div class="chip-group" style="margin-top:8px">${chip(name, '', 'Don\u2019t track', !sel, 'more_horiz')}</div>`;
 }
-function payMethodFields(accLabelText, mode) {
-  mode = mode || lsGet('exsy.chitMode', 'Cash');
+function payMethodFields(accLabelText, mode, accountId) {
+  mode = PAY_MODES.includes(mode) ? mode : lsGet('exsy.chitMode', 'Cash');
   return `<div class="form-label">How was it paid?</div><div class="chips">${PAY_MODES.map(m => chip('mode', m, m, m === mode, MODE_ICON[m])).join('')}</div>
-    <div class="form-label">${accLabelText}</div>${accChipsOptional('accountId', accForMode(mode))}`;
+    <div class="form-label">${accLabelText}</div>${accChipsOptional('accountId', accountId || accForMode(mode))}`;
 }
 function wirePayMethod(form) {
   form.addEventListener('change', e => {
@@ -253,19 +253,21 @@ function wirePayMethod(form) {
 }
 const payModesText = list => [...new Set(list.map(p => p.mode).filter(Boolean))].join(', ');
 
-function openPayCell(chId, mbId, m) {
+// pre = values read from a pasted message: { amount, mode, accountId, date, note, info }
+function openPayCell(chId, mbId, m, pre = {}) {
   const ch = D.chits.find(c => c.id === chId); if (!ch) return;
   const ci = chitInfo(ch), mb = ci.memberById.get(mbId), x = X();
   const paidList = ci.pays.filter(p => p.memberId === mbId && p.month === m).sort((a, b) => a.date.localeCompare(b.date));
   const rest = Math.max(0, ci.monthly - ci.paidOf(mbId, m));
   const s = openSheet(`<form id="cp">${sheetHead(`${mb?.name} · month ${m}`)}
     <p class="lead">${fmtMonth(ci.monthKey(m))} · due ${fmtDate(ci.dueDate(m))} · ${rest ? `${inr(rest)} pending` : 'fully paid'}</p>
+    ${pre.info ? `<div class="banner info" style="margin-top:12px">${ic('auto_awesome')}<div>${esc(pre.info)}</div></div>` : ''}
     ${paidList.length ? `<div class="card flush" style="margin-top:12px">${paidList.map(p => `<div class="li static"><span class="avatar" style="--c:#2e7d5b">${ic('check')}</span>
       <span class="li-text"><span class="li-title">${inr(p.amount)}</span><span class="li-sub">${esc([fmtDate(p.date), p.mode, p.accountId && accLabel(p.accountId, x), p.note].filter(Boolean).join(' · '))}</span></span>
       <button type="button" class="icon-btn" data-delpay="${p.id}" aria-label="Delete payment">${ic('delete')}</button></div>`).join('')}</div>` : ''}
-    ${rest > 0 ? `<label class="amount-field"><b>₹</b><input name="amount" inputmode="decimal" value="${rest}"></label>
-      ${payMethodFields('Money went to (whose cash / which bank)')}
-      <div class="grid2" style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${today()}">`)}${field('Note / UPI ref', `<input name="note" placeholder="optional">`)}</div>` : ''}
+    ${rest > 0 ? `<label class="amount-field"><b>₹</b><input name="amount" inputmode="decimal" value="${pre.amount || rest}"></label>
+      ${payMethodFields('Money went to (whose cash / which bank)', pre.mode === 'Net banking' ? 'Bank transfer' : pre.mode, pre.accountId)}
+      <div class="grid2" style="margin-top:16px">${field('Date', `<input type="date" name="date" value="${pre.date || today()}">`)}${field('Note / UPI ref', `<input name="note" placeholder="optional" value="${esc(pre.note || '')}">`)}</div>` : ''}
     <div class="sheet-actions"><button type="button" class="btn text" data-act="closeSheet">Close</button>${rest > 0 ? `<button class="btn filled">${ic('check')}Save payment</button>` : ''}</div></form>`);
   const f = s.querySelector('#cp');
   wirePayMethod(f);
