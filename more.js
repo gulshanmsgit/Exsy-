@@ -71,6 +71,7 @@ function pageMore() {
   const body = `<div class="card flush">
       ${item('#/accounts', 'account_balance', 'Accounts & books', `${D.books.length} books · ${D.accounts.filter(a => !a.archived).length} accounts`)}
       ${item('#/reports', 'bar_chart', 'Reports', 'Monthly and yearly spending, shops, for whom')}
+      ${item('#/homecosts', 'house', 'Home expenses', homePayer() ? `${payerName()} pays for the home${owedTo(meBook()?.id) > 0 ? ` · owes you ${inr(owedTo(meBook()?.id))}` : ''}` : 'Track what is spent for the home')}
       ${item('#/calendar', 'calendar_month', 'Calendar', 'What was spent on each day')}
       ${item('#/collect', 'event_available', 'Chit collection day', 'Everyone who still has to pay, most overdue first')}
       ${item('', 'bolt', 'Quick buttons', `${quickItems().length} one-tap entries on Home`, 'data-act="quickEdit"')}
@@ -192,22 +193,23 @@ function pageRecurring() {
       const done = r.lastDone === k;
       return `<div class="li"><button class="li" style="padding:0;border:0;flex:1;min-width:0" data-act="editRecurring" data-id="${r.id}">
         <span class="avatar" style="--c:${r.type === 'income' ? '#12804a' : colorFor(r.name)}">${ic(x.cat.get(r.categoryId)?.icon || 'event_repeat')}</span>
-        <span class="li-text"><span class="li-title">${esc(r.name)}</span><span class="li-sub">${ordinal(+r.day || 1)} of every month · ${inr(r.amount)} · ${esc(accLabel(r.accountId, x))}</span></span></button>
+        <span class="li-text"><span class="li-title">${esc(r.name)}</span><span class="li-sub">${ordinal(+r.day || 1)} of every month · ${inr(r.amount)} · ${esc(accLabel(r.accountId, x))}${r.type === 'transfer' ? ' → ' + esc(accLabel(r.toAccountId, x)) : ''}</span></span></button>
         ${done ? `<span class="tag ok">${ic('check')}Done</span>` : `<button class="btn tonal sm" data-act="recurNow" data-id="${r.id}">Add</button>`}</div>`;
     }).join('') || `<div class="empty">${ic('event_repeat')}No reminders yet</div>`}</div>`;
   return { title: 'Monthly bills & salary', back: '#/more', body, fabAct: 'editRecurring', fabLabel: 'Add reminder' };
 }
-function openRecurringForm(id) {
-  const r = D.recurring.find(x => x.id === id) || { type: 'expense', day: 1, accountId: defaultAccount() };
+function openRecurringForm(id, init = {}) {
+  const r = D.recurring.find(x => x.id === id) || { type: 'expense', day: 1, accountId: defaultAccount(), ...init };
   const render = () => {
     const cats = D.categories.filter(c => c.kind === r.type);
     const s = openSheet(`<form id="rf">${sheetHead(id ? 'Edit reminder' : 'New reminder', id ? `<button type="button" class="icon-btn" id="rf-del" aria-label="Delete">${ic('delete')}</button>` : '')}
       <div class="sheet-body">
-      <div class="chips">${chip('type', 'expense', 'Bill / expense', r.type === 'expense', 'trending_down')}${chip('type', 'income', 'Income', r.type === 'income', 'trending_up')}</div>
-      ${field('Name', `<input name="name" value="${esc(r.name || '')}" placeholder="e.g. Electricity bill, Salary" required>`)}
+      <div class="chips">${chip('type', 'expense', 'Bill / expense', r.type === 'expense', 'trending_down')}${chip('type', 'income', 'Income', r.type === 'income', 'trending_up')}${chip('type', 'transfer', 'Money to Mother / transfer', r.type === 'transfer', 'swap_horiz')}</div>
+      ${field('Name', `<input name="name" value="${esc(r.name || '')}" placeholder="${r.type === 'transfer' ? 'e.g. Monthly money to Mother' : 'e.g. Electricity bill, Salary'}" required>`)}
       <div class="grid2">${field('Usual amount', `<input name="amount" inputmode="decimal" value="${esc(r.amount ?? '')}">`)}${field('Day of month', `<input type="number" name="day" min="1" max="31" value="${esc(r.day)}">`)}</div>
-      <div class="form-label">Account</div>${accChips('accountId', r.accountId)}
-      <div class="form-label">Category</div><div class="chips">${cats.map(c => chip('categoryId', c.id, c.name, c.id === r.categoryId, c.icon)).join('')}</div>
+      <div class="form-label">${r.type === 'transfer' ? 'From' : 'Account'}</div>${accChips('accountId', r.accountId)}
+      ${r.type === 'transfer' ? `<div class="form-label">To</div>${accChips('toAccountId', r.toAccountId)}`
+        : `<div class="form-label">Category</div><div class="chips">${cats.map(c => chip('categoryId', c.id, c.name, c.id === r.categoryId, c.icon)).join('')}</div>`}
       </div>
       <div class="sheet-actions"><button type="button" class="btn text" data-act="closeSheet">Cancel</button><button class="btn filled">${ic('check')}Save</button></div></form>`);
     const f = s.querySelector('#rf');
@@ -220,7 +222,7 @@ function openRecurringForm(id) {
 }
 function recurNow(id) {
   const r = D.recurring.find(x => x.id === id); if (!r) return;
-  openEntry({ type: r.type, amount: r.amount ? String(r.amount) : '', accountId: r.accountId, categoryId: r.categoryId, note: r.name, recurringId: r.id, mode: ACC_T[X().acc.get(r.accountId)?.type]?.mode });
+  openEntry({ type: r.type, amount: r.amount ? String(r.amount) : '', accountId: r.accountId, toAccountId: r.toAccountId, categoryId: r.categoryId, note: r.name, recurringId: r.id, mode: ACC_T[X().acc.get(r.accountId)?.type]?.mode });
 }
 
 /* ============================================================
@@ -434,11 +436,15 @@ darkMq.addEventListener('change', applyTheme);
 /* ============================================================
    Pages and actions
    ============================================================ */
-const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect };
+const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect, homecosts: pageHomeCosts };
 
 const ACT = {
   closeSheet: () => closeSheet(),
   search: () => openSearch(),
+  homeSettle: d => openSettle(d.b),
+  homePayer: d => { save('prefs', { ...homePrefs(), id: 'home', payerBook: d.b }); snack(d.b ? `${X().book.get(d.b)?.name} pays for the home` : 'Home costs are only tracked'); },
+  homeMonthly: () => openHomeMonthly(),
+  addHomeExpense: () => openEntry({ forWhom: 'home' }),
   privacy: () => togglePrivacy(),
   goto: d => go(d.href),
   quickUse: d => useQuick(+d.i),

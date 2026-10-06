@@ -42,7 +42,8 @@ function renderEntry(f) {
     ${isCat ? `<div class="form-label">Category</div>${usageChips('categoryId', cats, f.categoryId, x.catUse)}` : ''}
     ${ty === 'expense' ? `<div class="form-label">Where (shop)</div>${usageChips('storeId', [{ id: '', name: 'None', icon: '' }, ...D.stores], f.storeId || '', x.storeUse, 8)}
       <div class="form-label">For whom</div>
-      <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}</div>` : ''}
+      <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}</div>
+      ${claimSwitch(f)}` : ''}
     <div class="form-label">${IN_T.has(ty) ? 'How did they pay?' : ty === 'transfer' ? 'How' : 'How did you pay?'}</div>
     <div class="chips" id="ef-modes">${MODES.map(m => chip('mode', m, m, f.mode === m, MODE_ICON[m])).join('')}</div>
     <div class="grid2" style="margin-top:16px">
@@ -64,7 +65,8 @@ function renderEntry(f) {
   form.onchange = e => {
     const n = e.target.name;
     if (n === 'type') { Object.assign(f, readForm(form), { type: e.target.value }); if (f.type !== ty && (ty === 'income' || f.type === 'income')) f.categoryId = ''; renderEntry(f); }
-    else if (n === 'accountId') { const m = ACC_T[X().acc.get(e.target.value)?.type]?.mode; const r = m && form.querySelector(`#ef-modes input[value="${m}"]`); if (r) r.checked = true; }
+    else if (n === 'accountId') { const m = ACC_T[X().acc.get(e.target.value)?.type]?.mode; const r = m && form.querySelector(`#ef-modes input[value="${m}"]`); if (r) r.checked = true; syncClaimSwitch(form); }
+    else if (n === 'forWhom') syncClaimSwitch(form);
     else if (n === 'personId') s.querySelector('#ef-newp').classList.toggle('hide', e.target.value !== '__new');
     else if (n === 'storeId' && e.target.value && !form.querySelector('input[name=categoryId]:checked')) {
       const c = catForStore(e.target.value), r = c && form.querySelector(`input[name=categoryId][value="${c}"]`);
@@ -97,7 +99,10 @@ function submitEntry(f, form, again) {
   if (f.id) { doc.id = f.id; doc.createdAt = f.createdAt; }
   if (v.type === 'transfer') doc.toAccountId = v.toAccountId;
   if (v.type === 'expense' || v.type === 'income') doc.categoryId = v.categoryId || (D.categories.find(c => c.kind === v.type && /^other/i.test(c.name)) || {}).id || '';
-  if (v.type === 'expense') { doc.storeId = v.storeId || ''; doc.forWhom = v.forWhom || 'home'; }
+  if (v.type === 'expense') {
+    doc.storeId = v.storeId || ''; doc.forWhom = v.forWhom || 'home';
+    if (claimApplies(doc.accountId, doc.forWhom)) doc.homeClaim = !!v.homeClaim;
+  }
   if (PERSON_T.has(v.type)) doc.personId = v.personId;
   if (v.type === 'lend' && v.dueDate) doc.dueDate = v.dueDate;
   if (f.recurringId) {
@@ -134,7 +139,7 @@ function txRow(t, x, accFocus) {
   return `<div class="swipe" data-id="${t.id}"><div class="swipe-bg" aria-hidden="true"><span>${ic('content_copy')}Copy to today</span><span>Delete${ic('delete')}</span></div>
   <button class="li" data-act="editEntry" data-id="${t.id}">
     <span class="avatar" style="--c:${color}">${ic(iconName || 'category')}</span>
-    <span class="li-text"><span class="li-title">${esc(txTitle(t, x))} ${overdue ? `<span class="tag bad">overdue</span>` : ''}</span><span class="li-sub">${esc(sub)}</span></span>
+    <span class="li-text"><span class="li-title">${esc(txTitle(t, x))} ${overdue ? `<span class="tag bad">overdue</span>` : ''}${isHomeClaim(t) ? `<span class="tag info" title="${esc(payerName())} pays this back">${ic('handshake')}${esc(payerName())}</span>` : ''}${t.homeSettle ? `<span class="tag ok">paid back</span>` : ''}</span><span class="li-sub">${esc(sub)}</span></span>
     <span class="li-end ${sign > 0 ? 'pos' : sign < 0 ? '' : 'muted'}">${sign > 0 ? '+' : sign < 0 ? '−' : ''}${inrAbs(t.amount)}</span>
   </button></div>`;
 }
@@ -203,6 +208,7 @@ function attention(x) {
     const od = D.txns.filter(t => t.personId === p.id && t.type === 'lend' && t.dueDate && t.dueDate < t0).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
     if (od) items.push({ icon: 'handshake', cls: 'bad', title: `${p.name} owes you ${inr(bal)}`, sub: `Was to be returned by ${fmtDate(od.dueDate)}`, go: `#/person/${p.id}` });
   }
+  items.push(...homeAttention());
   return items;
 }
 

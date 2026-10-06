@@ -47,6 +47,15 @@ Keep the sync code / device link private: whoever has it can open the book.
 - **Where the money is** (Home): every cash and bank balance; the button on the right counts cash / updates a bank
   balance and records the difference as a "Balance correction".
 
+## Home expenses (Mother pays for the home)
+
+- Add any home cost as an **Expense** with **For whom: Home**, paid from whichever account the money really left.
+- If it was paid from *your* (or anyone else's) money, the switch **“Mother pays this back to me”** appears and is on:
+  Mother's balance with you goes up. Switch it off for the few costs she should not pay back.
+- **More → Home expenses:** what Mother owes you, who paid how much this month, what for, and
+  **Mother paid it back** (records the transfer Mother → you). Choose who pays for the home, and the date to count from.
+- **Fixed monthly money to Mother:** Home expenses → *Set up* creates a monthly reminder that records the transfer in one tap.
+
 ## Everyday shortcuts
 
 - **Quick buttons:** tick *Also add as a quick button* when saving an entry; it appears on Home and one tap saves it
@@ -83,6 +92,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `pages.js` | Entry form, Home, Entries, Accounts, People |
 | `chit.js` | Chit groups, collections, draw, payouts |
 | `pdf.js` | PDF statements/reports and the share sheet |
+| `home.js` | Home expenses: who pays for the home, what is owed back, settling up |
 | `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
