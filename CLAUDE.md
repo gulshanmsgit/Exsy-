@@ -10,7 +10,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - Icons: Material Symbols Rounded, downloaded as a subset – every icon name must be in `ICON_CHOICES` or `UI_ICONS`
   (`app.js`); `ic()` warns in the console otherwise.
 - Data: `D[collection]` arrays; `save(c, doc)` / `removeDoc` / `removeMany` (with Undo) update memory first, then the store.
-  Store is `localStore()` (localStorage key `exsy.local`) or `cloudStore()` (Firestore `workspaces/{syncCode}/{coll}/{id}`,
+  Store is `localStore()` (localStorage key `exsy.local`) or `cloudStore()` (Firestore `moneybooks/{syncCode}/{coll}/{id}`,
   live `onSnapshot`, offline cache). Adding a collection = add to `COLLS` **and** `firestore.rules`.
 - Balances are never stored: `X()` derives them (opening + txns + chit payments − chit payouts), memoised on `VER`.
 - Txn types: expense, income, transfer, lend, collect (got back), borrow, repay. Person balance > 0 = they owe the owner.
