@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each money book lives under an unguessable sync code (24+ characters).
+    // There is no rule for listing /workspaces itself, so nobody can browse
+    // other books: you need the exact code.
+    match /workspaces/{ws}/{coll}/{docId} {
+      allow read, write: if ws.size() >= 24
+        && coll in ['books', 'accounts', 'txns', 'categories', 'stores', 'people', 'recurring',
+                    'chits', 'chitMembers', 'chitPayments', 'chitDraws', 'prefs'];
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Exsy – Money Book",
+  "short_name": "Exsy",
+  "description": "Personal money book: family accounts, cash and bank, lending, credit cards and chit business.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5fbf5",
+  "theme_color": "#f5fbf5",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
