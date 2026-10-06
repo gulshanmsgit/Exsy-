@@ -32,6 +32,7 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--surface); color: var(--on-surface); font: 400 14px/20px var(--font); letter-spacing: .1px; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
 a { color: var(--primary); text-decoration: none; }
@@ -66,7 +67,11 @@ h1, h2, h3, p { margin: 0; }
 .nav-item.on .ms { font-variation-settings: 'FILL' 1; }
 .rail { display: none; }
 .fab { position: fixed; z-index: 25; right: 16px; bottom: calc(96px + var(--safe-b)); height: 56px; min-width: 56px; padding: 0 20px 0 16px; border: 0; border-radius: 16px; background: var(--primary-container); color: var(--on-primary-container); display: inline-flex; align-items: center; gap: 12px; font-weight: 500; font-size: 14px; box-shadow: var(--shadow); cursor: pointer; }
+.fab { transition: transform .25s cubic-bezier(.2,0,0,1), opacity .2s; }
 .fab:active { transform: scale(.97); }
+.fab.away { transform: translateY(calc(100% + 120px)); opacity: 0; pointer-events: none; }
+/* Phones: a compact round button covers less of the list behind it */
+@media (max-width: 600px) { .fab { width: 56px; padding: 0; justify-content: center; } .fab > span:not(.ms) { display: none; } }
 @media (min-width: 840px) {
   .layout { display: grid; grid-template-columns: 96px 1fr; }
   .rail { display: flex; flex-direction: column; align-items: center; gap: 12px; position: sticky; top: 0; height: 100dvh; padding: 16px 0; background: var(--surface); }
@@ -100,7 +105,8 @@ h1, h2, h3, p { margin: 0; }
 .li:active { background: color-mix(in srgb, var(--on-surface) 10%, transparent); }
 .li.static { cursor: default; } .li.static:hover { background: none; }
 .li-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.li-title { font-size: 16px; line-height: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.li-title { font-size: 16px; line-height: 24px; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.li-title .tag { flex: none; }
 .li-sub { font-size: 13px; line-height: 18px; color: var(--on-surface-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .li-end { text-align: right; font-size: 15px; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .li-end small { display: block; font-size: 12px; font-weight: 400; color: var(--on-surface-variant); }
@@ -124,7 +130,7 @@ a.stat { display: block; color: inherit; }
 button.stat { border: 0; text-align: left; cursor: pointer; color: inherit; }
 
 /* ---------- buttons ---------- */
-.btn { height: 40px; padding: 0 24px; border-radius: 20px; border: 0; font-weight: 500; font-size: 14px; letter-spacing: .1px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; white-space: nowrap; background: none; color: var(--primary); }
+.btn { min-height: 40px; padding: 6px 24px; text-align: center; border-radius: 20px; border: 0; font-weight: 500; font-size: 14px; letter-spacing: .1px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; white-space: normal; background: none; color: var(--primary); max-width: 100%; }
 .btn .ms { font-size: 18px; margin-left: -6px; }
 .btn.filled { background: var(--primary); color: var(--on-primary); }
 .btn.tonal { background: var(--secondary-container); color: var(--on-secondary-container); }
@@ -151,7 +157,7 @@ button.stat { border: 0; text-align: left; cursor: pointer; color: inherit; }
 .content > .chips.scroll { margin: 0 -16px; padding: 0 16px 4px; }
 .chip { position: relative; flex: none; cursor: pointer; }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
-.chip > span:not(.ms), a.chip, button.chip { height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--outline-variant); display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--on-surface-variant); background: none; }
+.chip > span:not(.ms), a.chip, button.chip { min-height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--outline-variant); display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--on-surface-variant); background: none; }
 .chip .ms { font-size: 18px; margin-left: -4px; }
 .chip input:checked + span, a.chip.on, button.chip.on { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
 .chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
@@ -167,8 +173,10 @@ button.stat { border: 0; text-align: left; cursor: pointer; color: inherit; }
 .tag .ms { font-size: 14px; }
 
 /* ---------- segmented buttons ---------- */
-.seg { display: flex; border: 1px solid var(--outline); border-radius: 20px; overflow: hidden; height: 40px; }
-.seg > * { flex: 1; border: 0; background: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; font-size: 14px; cursor: pointer; color: var(--on-surface); padding: 0 8px; white-space: nowrap; }
+.seg { display: flex; border: 1px solid var(--outline); border-radius: 20px; overflow: hidden; min-height: 40px; max-width: 100%; }
+.seg > * { flex: 1; border: 0; background: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; font-size: 14px; cursor: pointer; color: var(--on-surface); padding: 6px; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.seg > * > span:not(.ms) { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 420px) { .seg .ms { display: none; } }
 .seg > * + * { border-left: 1px solid var(--outline); }
 .seg > .on { background: var(--secondary-container); color: var(--on-secondary-container); }
 .seg .ms { font-size: 18px; }

@@ -521,6 +521,13 @@ const onUiInput = e => { const k = e.target.dataset && e.target.dataset.ui; if (
 app.addEventListener('input', onUiInput);
 app.addEventListener('change', onUiInput);
 window.addEventListener('hashchange', () => { if (sheetOpen) closeSheet(true); render(); });
+// The floating Add button moves out of the way while scrolling down and comes back on scroll up
+let lastY = 0;
+window.addEventListener('scroll', () => {
+  const y = window.scrollY, fab = document.querySelector('.fab');
+  if (fab) fab.classList.toggle('away', y > lastY + 4 && y > 80 ? true : y < lastY - 4 || y < 80 ? false : fab.classList.contains('away'));
+  lastY = y;
+}, { passive: true });
 window.addEventListener('online', scheduleRender);
 window.addEventListener('offline', scheduleRender);
 // Lock again when the app comes back after 5 minutes in the background

@@ -98,7 +98,9 @@ function pageChit(id) {
       </div></div>
     <div class="seg" style="margin-top:16px">${tabs.map(([k, l, i]) => `<button class="${tab === k ? 'on' : ''}" data-act="chitTab" data-k="${k}">${tab === k ? ic('check') : ic(i)}<span>${l}</span></button>`).join('')}</div>
     <div style="margin-top:12px">${tab === 'grid' ? chitGrid(ci) : tab === 'members' ? chitMembers(ci) : tab === 'draws' ? chitDraws(ci) : chitMonth(ci)}</div>`;
-  return { title: ch.name, back: '#/chits', body, fabAct: 'editChit', fabData: `data-id="${id}"`, fabIcon: 'edit', fabLabel: 'Edit chit', actions: `<button class="icon-btn" data-act="shareChit" data-id="${id}" title="Chit report PDF" aria-label="Chit report PDF">${ic('picture_as_pdf')}</button>` };
+  return { title: ch.name, back: '#/chits', body, fab: false,
+    actions: `<button class="icon-btn" data-act="shareChit" data-id="${id}" title="Chit report PDF" aria-label="Chit report PDF">${ic('picture_as_pdf')}</button>
+      <button class="icon-btn" data-act="editChit" data-id="${id}" title="Edit chit" aria-label="Edit chit">${ic('edit')}</button>` };
 }
 const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 

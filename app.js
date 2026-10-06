@@ -331,7 +331,8 @@ function shell(pg, active) {
   const sync = store.kind === 'cloud'
     ? `<a class="icon-btn" href="#/sync" title="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}">${ic(navigator.onLine ? 'cloud_done' : 'cloud_off')}</a>`
     : `<a class="icon-btn" href="#/sync" title="Saved on this device only">${ic('phone_android')}</a>`;
-  const fab = pg.fab === false ? '' : `<button class="fab" data-act="${pg.fabAct || 'addEntry'}" ${pg.fabData || ''}>${ic(pg.fabIcon || 'add')}<span>${pg.fabLabel || 'Add entry'}</span></button>`;
+  const fabLabel = pg.fabLabel || 'Add entry';
+  const fab = pg.fab === false ? '' : `<button class="fab" data-act="${pg.fabAct || 'addEntry'}" ${pg.fabData || ''} aria-label="${esc(fabLabel)}" title="${esc(fabLabel)}">${ic(pg.fabIcon || 'add')}<span>${fabLabel}</span></button>`;
   return `<div class="layout">
     <nav class="rail"><div class="brand"><img src="icons/icon-192.png" alt="Exsy"></div>${nav}</nav>
     <div class="main">

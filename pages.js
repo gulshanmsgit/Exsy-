@@ -481,7 +481,7 @@ function pagePerson(id) {
       ${num(p.opening) ? `<div class="li static"><span class="avatar">${ic('info')}</span><span class="li-text"><span class="li-title">Opening balance</span><span class="li-sub">Before using Exsy</span></span><span class="li-end">${inr(p.opening)}</span></div>` : ''}
       ${!rows.length && !num(p.opening) ? `<div class="empty">No entries with ${esc(p.name)} yet</div>` : ''}
     </div>`;
-  return { title: p.name, back: '#/people', body, fabAct: 'addEntry', fabData: `data-type="lend" data-person="${id}"`, fabLabel: 'Lend / repay' };
+  return { title: p.name, back: '#/people', body, fab: false };
 }
 function openPersonForm(id) {
   const p = D.people.find(x => x.id === id) || {};
