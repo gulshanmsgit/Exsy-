@@ -32,6 +32,10 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - `home.js` (Mother's money): `prefs/home` {payerBook, monthly:{from,amount} (one setting, Save replaces; legacy `salary` list read as its latest entry), salaryDay, arrears (default true: month M's money is added on the pay day of M+1), since}. `motherLedger()` =
   monthly money (computed, no entries) − home claims (expense forWhom 'home' from a non-Mother account, `homeClaim !== false`)
   − transfers Me→Mother + transfers Mother→Me, counted from `since`. Route `#/mother` (`#/homecosts` kept as alias).
+- `emi.js`: EMIs in `prefs/emis` {items}; `emiSchedule(e)` reducing balance, GST on interest + fee (first month).
+  `emiTick()` (called after every render) adds due bills as txns with fixed ids `emi_{emiId}_{k}` and records `posted` k's
+  (idempotent across devices; a deleted bill is not re-added). Person EMI → type lend.
+- `explain.js`: `meaningOf(v, orig)` builds the "What this means" text (balances before → after, Mother's money effect).
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -41,6 +45,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.7: EMIs (card/loan, interest per month/year, GST, auto bills) + "What this means" box in the entry form.
 - v1.6: monthly money fix (Save replaced nothing → wrong start month kept counting), paid-next-month rule, redraw on resume/date change.
 - v1.5: simplified to one "Mother's money" balance (monthly money + home costs + given/received); switch moved up in the entry form.
 - Owner must create the Firestore database in exsy-591a1 and publish `firestore.rules` before sync works.

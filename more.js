@@ -72,6 +72,7 @@ function pageMore() {
       ${item('#/accounts', 'account_balance', 'Accounts & books', `${D.books.length} books · ${D.accounts.filter(a => !a.archived).length} accounts`)}
       ${item('#/reports', 'bar_chart', 'Reports', 'Monthly and yearly spending, shops, for whom')}
       ${item('#/mother', 'house', homePayer() ? `${payerName()}’s money & home costs` : 'Home costs', homePayer() ? (() => { const b = motherLedger().balance; return b >= 0 ? `${inr(b)} of ${payerName()}’s money with you` : `${payerName()} owes you ${inr(-b)}`; })() : 'Choose whose money pays for the home')}
+      ${item('#/emis', 'credit_card', 'EMIs', emiItems().length ? `${emiItems().filter(e => !e.closed && emiPaidCount(e) < emiSchedule(e).rows.length).length} running · monthly bill with GST worked out` : 'Card / loan EMIs with interest and GST worked out')}
       ${item('#/calendar', 'calendar_month', 'Calendar', 'What was spent on each day')}
       ${item('#/collect', 'event_available', 'Chit collection day', 'Everyone who still has to pay, most overdue first')}
       ${item('', 'bolt', 'Quick buttons', `${quickItems().length} one-tap entries on Home`, 'data-act="quickEdit"')}
@@ -436,11 +437,12 @@ darkMq.addEventListener('change', applyTheme);
 /* ============================================================
    Pages and actions
    ============================================================ */
-const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect, mother: pageMother, homecosts: pageMother };
+const PAGES = { home: pageHome, txns: pageTxns, chits: pageChits, chit: pageChit, people: pagePeople, person: pagePerson, accounts: pageAccounts, account: pageAccount, more: pageMore, reports: pageReports, cats: pageCats, recurring: pageRecurring, sync: pageSync, calendar: pageCalendar, collect: pageCollect, mother: pageMother, homecosts: pageMother, emis: pageEmis, emi: pageEmi };
 
 const ACT = {
   closeSheet: () => closeSheet(),
   search: () => openSearch(),
+  editEmi: d => openEmiForm(d.id),
   motherMove: d => openMotherMove(d.dir),
   motherSalary: () => saveSalary(),
   motherSalaryOff: () => stopSalary(),

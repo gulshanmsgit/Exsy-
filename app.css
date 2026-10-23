@@ -368,3 +368,10 @@ body { overscroll-behavior-y: contain; }
 .claim-row { margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: var(--tertiary-container); color: var(--on-tertiary-container); }
 .claim-row > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .claim-row small { font-size: 12px; opacity: .85; }
+/* "What this means" box in the entry form, EMI calculator */
+.meaning { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--sc-high); }
+.meaning b { display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: 13px; color: var(--primary); }
+.meaning p { margin-top: 4px; font-size: 14px; line-height: 21px; white-space: pre-line; }
+.emi-table td, .emi-table th { padding: 0 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.emi-table td small { font-size: 10px; color: var(--on-surface-variant); }
+.emi-table tr.done td, .emi-table tr.done th { color: var(--on-surface-variant); }

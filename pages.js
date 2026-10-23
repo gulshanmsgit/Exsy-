@@ -52,6 +52,7 @@ function renderEntry(f) {
     </div>
     ${ty === 'lend' ? `<div style="margin-top:12px">${field('Note', `<input name="note" value="${esc(f.note || '')}" placeholder="optional">`)}</div>` : ''}
     ${editing ? '' : `<label class="switch-row" style="margin-top:8px"><span>${ic('bolt', 'sm')} Also add as a quick button on Home</span><input type="checkbox" name="asQuick"></label>`}
+    ${meaningBox()}
     <div class="sheet-actions">
       ${editing ? '' : `<button type="button" class="btn tonal" id="ef-more">Save & add another</button>`}
       <button class="btn filled" type="submit">${ic('check')}Save</button>
@@ -74,6 +75,7 @@ function renderEntry(f) {
     }
   };
   const paste = s.querySelector('#ef-paste'); if (paste) paste.onclick = () => openPasteSheet();
+  wireMeaning(form, f);
   form.onsubmit = e => { e.preventDefault(); submitEntry(f, form, false); };
   const more = s.querySelector('#ef-more'); if (more) more.onclick = () => submitEntry(f, form, true);
   const del = s.querySelector('#ef-del');
@@ -208,7 +210,7 @@ function attention(x) {
     const od = D.txns.filter(t => t.personId === p.id && t.type === 'lend' && t.dueDate && t.dueDate < t0).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
     if (od) items.push({ icon: 'handshake', cls: 'bad', title: `${p.name} owes you ${inr(bal)}`, sub: `Was to be returned by ${fmtDate(od.dueDate)}`, go: `#/person/${p.id}` });
   }
-  items.push(...homeAttention());
+  items.push(...homeAttention(), ...emiAttention());
   return items;
 }
 

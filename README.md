@@ -60,6 +60,22 @@ One number on **More → Mother's money** (also shown on Home): how much of Moth
   accounts and hers).
 - Positive = *Mother's money with you*; negative = *Mother owes you*. Month-by-month statement on the same page.
 
+## EMIs (More → EMIs)
+
+Enter what it is, the card (or bank), price, interest rate (**per month** like 1.33% or **per year**), months, first EMI
+date, processing fee and GST % (18% by default). Exsy works out the reducing-balance EMI and every month's bill:
+EMI + GST on that month's interest (+ fee and its GST in the first month), shows the full schedule and the total
+extra cost, and on each due date adds the bill as an expense on the card. If the EMI is for someone else
+(e.g. Sister's phone on your card), choose *Sister (pays me back)* and each bill is recorded as money lent to her.
+Don't also add the purchase itself – the EMIs are the expense. Home reminds you 5 days before each EMI.
+
+## “What this means” in every entry
+
+While adding or editing an entry, a box above Save explains it in plain words with the effect on balances, e.g.
+*₹3,000 cash added to Gulshan's Cash – Salary. Gulshan's Cash: ₹16,540 → ₹19,540* or *Mother paid this from her own
+money – nothing changes between you and Mother*. Rename the book “Me” to your name (More → Accounts & books) to
+see your name in these sentences.
+
 ## Everyday shortcuts
 
 - **Quick buttons:** tick *Also add as a quick button* when saving an entry; it appears on Home and one tap saves it
@@ -97,6 +113,8 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `chit.js` | Chit groups, collections, draw, payouts |
 | `pdf.js` | PDF statements/reports and the share sheet |
 | `home.js` | Mother's money: monthly money, home costs, given / received, one running balance |
+| `emi.js` | EMIs: schedule with interest + GST, monthly bills added on their dates |
+| `explain.js` | “What this means” sentence in the entry form |
 | `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
