@@ -25,6 +25,12 @@ SCENES = [  # screenshot, caption line 1, line 2 (highlight), transition into th
     ('11-collection-day.jpg', 'Collection day,', 'made easy', 'slide'),
 ]
 INTRO, HOLD, TRANS, OUTRO = 2.4, 2.35, 0.45, 3.4
+# timing.json (written by build_audio.py) stretches each part to fit its voice-over line
+import json
+_tp = os.path.join(HERE, 'timing.json')
+TIMING = json.load(open(_tp)) if os.path.exists(_tp) else {}
+INTRO = TIMING.get('intro', INTRO); OUTRO = TIMING.get('outro', OUTRO)
+HOLDS = TIMING.get('holds', [HOLD] * len(SCENES))
 
 
 def font(path, size): return ImageFont.truetype(path, size)
@@ -113,7 +119,7 @@ def scene_layer(i, t):
     L = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     L.alpha_composite(caption_layer(SCENES[i][1], SCENES[i][2], t), (0, 40))
     ph = PHONES[i]
-    k = 0.86 + 0.03 * clamp01(t / (HOLD + TRANS))           # gentle push-in
+    k = 0.86 + 0.03 * clamp01(t / (HOLDS[i] + TRANS))       # gentle push-in
     pw, phh = int(ph.width * k), int(ph.height * k)
     img = ph.resize((pw, phh), Image.BILINEAR)
     y = 420 + int(math.sin(t * 2.2) * 8)                     # float
@@ -223,7 +229,7 @@ def open_writer(path):
 
 
 def main():
-    out = os.path.join(HERE, 'exsy_promo.mp4')
+    out = os.path.join(HERE, 'exsy_promo_silent.mp4')
     vw, code = open_writer(out)
     put = lambda im: vw.write(cv2.cvtColor(np.asarray(im.convert('RGB')), cv2.COLOR_RGB2BGR))
     t_global = 0.0
@@ -236,16 +242,16 @@ def main():
         # transition from the previous scene (or the intro) into scene i
         for f in range(int(TRANS * FPS)):
             p = f / (TRANS * FPS); bg = background(t_global + f / FPS)
-            A = scene_layer(i - 1, HOLD + TRANS * p) if i > 0 else Image.new('RGBA', (W, H), (0, 0, 0, 0))
+            A = scene_layer(i - 1, HOLDS[i - 1] + TRANS * p) if i > 0 else Image.new('RGBA', (W, H), (0, 0, 0, 0))
             B = scene_layer(i, TRANS * p)
             bg.alpha_composite(transition(kind, A, B, p)); put(bg)
         t_global += TRANS
-        for f in range(int(HOLD * FPS)):
+        for f in range(int(HOLDS[i] * FPS)):
             bg = background(t_global + f / FPS); bg.alpha_composite(scene_layer(i, TRANS + f / FPS)); put(bg)
-        t_global += HOLD
+        t_global += HOLDS[i]
         print(f'scene {i + 1}/{n}', flush=True)
     # zoom transition into the end card
-    last = scene_layer(n - 1, HOLD + TRANS)
+    last = scene_layer(n - 1, HOLDS[n - 1] + TRANS)
     for f in range(int(TRANS * FPS)):
         p = f / (TRANS * FPS); im = outro_frame(0); im.alpha_composite(scaled(last, 1 + 0.25 * ease_in_out(p), 1 - ease_in_out(p))); put(im)
     for f in range(int(OUTRO * FPS)):

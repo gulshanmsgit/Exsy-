@@ -1,3 +1,5 @@
 .claude/settings.local.json
 *.log
 marketing/*.mp4
+marketing/*.wav
+marketing/voice/
