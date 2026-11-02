@@ -66,8 +66,8 @@ One number on **More → Mother's money** (also shown on Home): how much of Moth
 
 ## Budget, mood and trends
 
-- **More → Budget:** a total for the month (which books it counts) and limits per category; suggestions from the
-  last 3 months' average.
+- **More → Budget:** a total for the month and limits per category; counts **your own** spending by default
+  (switch to All books / Mother / Father); suggestions from the last 3 months' average.
 - **Mood at the top of Home:** 🤩 well under · 😊 on track · 😬 spending faster than planned · 😟 almost at the
   limit · 😱 over budget (it shakes), with what is left per day.
 - **Spending trend on Home:** *This month* (day by day vs last month and the budget pace), *6 months* or
@@ -91,6 +91,10 @@ money – nothing changes between you and Mother*. Rename the book “Me” to y
 see your name in these sentences.
 
 ## Everyday shortcuts
+
+- **Edit Home** (bottom of Home, or More): show, hide and reorder the Home cards – saved per device.
+- Summaries show whole rupees (₹3,21,217); single entries and EMI bills keep the paise. Colours: green = money in,
+  red = money out, orange = money owed.
 
 - **Quick buttons:** tick *Also add as a quick button* when saving an entry; it appears on Home and one tap saves it
   for today (Undo in the message). Rename / reorder / remove: More → Quick buttons.
@@ -134,7 +138,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
-| `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline |
+| `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline; `icons/make_icons.py` draws the logo |
 | `firestore.rules` | Firestore security rules |
 
 Run locally: `python -m http.server 8642` in this folder, then open <http://127.0.0.1:8642>.

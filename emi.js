@@ -100,8 +100,8 @@ function pageEmi(id) {
     <p class="muted" style="margin:10px 4px">${e.auto === false ? 'Bills are not added automatically – add them yourself.' : `Each month’s bill is added on its date as ${e.personId ? `money lent to ${esc(x.person.get(e.personId)?.name || '?')}` : 'an expense'} on ${esc(accLabel(e.accountId, x))}.`}
       Don’t also add the purchase itself – the EMIs are the expense.</p>
     <div class="grid-wrap"><table class="cg emi-table"><thead><tr><th class="name">#</th><th>Date</th><th>Principal</th><th>Interest</th><th>GST</th><th>Bill</th><th>Left</th></tr></thead><tbody>
-      ${s.rows.map(r => `<tr class="${r.date <= t0 ? 'done' : ''}"><th class="name">${r.k}${r.date <= t0 ? ' ✓' : ''}</th><td>${fmtDay(r.date)} ’${r.date.slice(2, 4)}</td><td>${inr(r.principal)}</td><td>${inr(r.interest)}</td>
-        <td>${inr(r.gst + r.feeGst)}</td><td><b>${inr(r.total)}</b>${r.fee ? '<br><small>incl. fee</small>' : ''}</td><td>${inr(r.balance)}</td></tr>`).join('')}
+      ${s.rows.map(r => `<tr class="${r.date <= t0 ? 'done' : ''}"><th class="name">${r.k}${r.date <= t0 ? ' ✓' : ''}</th><td>${fmtDay(r.date)} ’${r.date.slice(2, 4)}</td><td>${inrP(r.principal)}</td><td>${inrP(r.interest)}</td>
+        <td>${inrP(r.gst + r.feeGst)}</td><td><b>${inrP(r.total)}</b>${r.fee ? '<br><small>incl. fee</small>' : ''}</td><td>${inrP(r.balance)}</td></tr>`).join('')}
     </tbody></table></div>`;
   return { title: e.name, back: '#/emis', body, fab: false, actions: `<button class="icon-btn" data-act="shareEmi" data-id="${id}" title="PDF / share" aria-label="PDF or share">${ic('picture_as_pdf')}</button><button class="icon-btn" data-act="editEmi" data-id="${id}" title="Edit EMI" aria-label="Edit EMI">${ic('edit')}</button>` };
 }
@@ -145,7 +145,7 @@ function openEmiForm(id) {
     const v = readEmi(), box = s.querySelector('#emf-calc');
     if (!(v.principal > 0) || !(v.months > 0)) { box.innerHTML = `<b>${ic('info', 'sm')}Monthly bill</b><p>Enter the price and months to see the monthly bill with GST.</p>`; return; }
     const sc = emiSchedule(v), first = sc.rows[0];
-    box.innerHTML = `<b>${ic('calculate', 'sm')}Monthly bill: about ${inr(Math.round(sc.monthly))}</b><p>EMI ${inr(sc.emi)} + GST on the interest${v.rate ? ' – a little less each month as the interest goes down' : ' (0% interest)'}.${first.fee ? ` First month ${inr(first.total)} (includes ${inr(first.fee)} fee + GST).` : ''}
+    box.innerHTML = `<b>${ic('calculate', 'sm')}Monthly bill: about ${inr(Math.round(sc.monthly))}</b><p>EMI ${inrP(sc.emi)} + GST on the interest${v.rate ? ' – a little less each month as the interest goes down' : ' (0% interest)'}.${first.fee ? ` First month ${inr(first.total)} (includes ${inr(first.fee)} fee + GST).` : ''}
 Interest ${inr(sc.interest)} + GST ${inr(sc.gst)}${sc.fee ? ` + fee ${inr(sc.fee)}` : ''} → you pay ${inr(sc.total)} for ${inr(v.principal)} (${inr(sc.total - v.principal)} extra).
 Last EMI on ${fmtDate(sc.rows[sc.rows.length - 1].date)}.</p>`;
   };

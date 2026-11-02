@@ -44,6 +44,9 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   6 or 12 month bars), modes `UI.trendMode`, filter `UI.trendCat`.
 - `openShareSheet` accepts `controls` (HTML in #sh-opts; `data-show-when="name=value"` toggles) + `build(opts)` +
   `messageFor(opts)`; used by person statements (what: all/taken, when: all/month/custom).
+- Home = `HOME_CARDS` rendered in the order/visibility from localStorage `exsy.homeLayout` (Edit Home, per device).
+- `inr()` shows whole rupees; `inrP()`/`inrAbsP()` keep paise (entry rows, EMI schedule). Colour tokens: --pos in,
+  --neg out, --owe owed. Budget scope defaults to the Me book. Logo/icons: `python icons/make_icons.py`.
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -53,6 +56,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.10: new logo, Edit Home, whole rupees, owed colour, budget defaults to Me.
 - v1.9: budgets + mood emoji + trend graphs on Home, EMI PDF/share, person statement options.
 - v1.8: calc keys, pay-for-a-person + New person, card due entry fix, gift/loan edit fixes, EMI copy fix.
 - v1.7: EMIs (card/loan, interest per month/year, GST, auto bills) + "What this means" box in the entry form.

@@ -83,6 +83,7 @@ function pageMore() {
     <div class="section-head" style="margin-top:16px"><h2>Settings</h2></div>
     <div class="card flush">
       ${item('#/sync', store.kind === 'cloud' ? 'cloud_done' : 'phone_android', 'Sync & devices', store.kind === 'cloud' ? 'Synced with Firebase – open on phone and laptop' : 'Saved on this device only – turn on sync')}
+      ${item('', 'tune', 'Edit Home', 'Show, hide and reorder the cards on Home', 'data-act="editHome"')}
       ${item('', 'vibration', lsGet('exsy.buzz', true) ? 'Vibration is on' : 'Vibration is off', 'Short buzz when you save, swipe or draw a winner', 'data-act="buzzToggle"')}
       ${item('', privacyOn() ? 'visibility_off' : 'visibility', privacyOn() ? 'Amounts are hidden' : 'Hide amounts', 'Blur all money figures – also the eye icon at the top', 'data-act="privacy"')}
       ${item('', hasPin ? 'lock' : 'lock_open', hasPin ? 'App lock is on' : 'App lock (PIN)', hasPin ? 'Tap to change or remove the PIN' : 'Ask for a 4-digit PIN when the app opens', 'data-act="pin"')}
@@ -445,6 +446,7 @@ const ACT = {
   search: () => openSearch(),
   editEmi: d => openEmiForm(d.id),
   shareEmi: d => shareEmi(d.id),
+  editHome: () => openHomeEdit(),
   budSave: () => { const v = evalAmount($('#bud-total').value); saveBudgetPrefs({ total: v > 0 ? v : 0 }); buzz(); snack(v > 0 ? `Monthly budget ${inr(v)}` : 'Monthly budget removed'); },
   budScope: d => saveBudgetPrefs({ scope: d.b }),
   budCat: d => openCatBudget(d.id),

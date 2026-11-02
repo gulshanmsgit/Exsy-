@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.10.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -45,12 +45,15 @@ const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 const round2 = n => Math.round(n * 100) / 100;
 const sum = (arr, f = x => x) => arr.reduce((s, x) => s + num(f(x)), 0);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-function inr(n, sign) {
+// Summaries show whole rupees (₹3,21,217); inrP keeps paise for single entries, EMI bills and details
+function inrP(n, sign) {
   const v = round2(+n || 0);
   const s = '₹' + Math.abs(v).toLocaleString('en-IN', { maximumFractionDigits: 2 });
   return v < 0 ? '−' + s : (sign && v > 0 ? '+' + s : s);
 }
+function inr(n, sign) { const v = Math.round(+n || 0); return inrP(v === 0 ? 0 : v, sign); }
 const inrAbs = n => inr(Math.abs(+n || 0));
+const inrAbsP = n => inrP(Math.abs(+n || 0));
 function evalAmount(s) {
   s = String(s ?? '').replace(/[,₹\s]/g, '').replace(/×/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-').replace(/[*/+\-]+$/, '');
   if (!s) return 0;

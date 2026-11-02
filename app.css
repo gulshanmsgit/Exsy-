@@ -10,7 +10,7 @@
   --sc-lowest: #fff; --sc-low: #eff5ef; --sc: #e9efe9; --sc-high: #e4eae4; --sc-highest: #dee4de;
   --outline: #707973; --outline-variant: #bfc9c2;
   --inverse-surface: #2c322f; --inverse-on-surface: #ecf2ed; --inverse-primary: #6cdbac;
-  --pos: #12804a; --neg: #c0392b;
+  --pos: #12804a; --neg: #c0392b; --owe: #b25e09;   /* money in · money out · money owed */
   --shadow: 0 1px 3px rgba(0,0,0,.15), 0 4px 8px 3px rgba(0,0,0,.08);
   --font: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -26,7 +26,7 @@
   --sc-lowest: #0a0f0d; --sc-low: #171d1a; --sc: #1b211e; --sc-high: #252b28; --sc-highest: #303633;
   --outline: #89938d; --outline-variant: #404944;
   --inverse-surface: #dee4de; --inverse-on-surface: #2c322f; --inverse-primary: #006c4c;
-  --pos: #7ddca0; --neg: #ffb4ab;
+  --pos: #7ddca0; --neg: #ffb4ab; --owe: #ffb86b;
   --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 8px 3px rgba(0,0,0,.25);
 }
 
@@ -44,6 +44,7 @@ h1, h2, h3, p { margin: 0; }
 .muted { color: var(--on-surface-variant); }
 .pos { color: var(--pos); }
 .neg { color: var(--neg); }
+.owe { color: var(--owe); }
 .num { font-variant-numeric: tabular-nums; }
 .hide { display: none !important; }
 .boot { min-height: 100dvh; display: grid; place-items: center; }
@@ -391,7 +392,7 @@ body { overscroll-behavior-y: contain; }
 .mood-text small { font-size: 12px; color: var(--on-surface-variant); }
 .mood-ok { background: color-mix(in srgb, var(--pos) 14%, var(--sc-low)); }
 .mood-warn { background: var(--warn-container); color: var(--on-warn-container); }
-.mood-warn .progress i { background: #c8742a; }
+.mood-warn .progress i { background: var(--owe); }
 .mood-bad { background: var(--error-container); color: var(--on-error-container); }
 .mood-bad .progress i { background: var(--error); }
 .mood-bad .mood-emoji { animation: panic 1.2s ease-in-out infinite; }
@@ -407,3 +408,12 @@ svg.trend { width: 100%; height: auto; display: block; }
 .trend .t-bar { fill: color-mix(in srgb, var(--primary) 45%, var(--sc-highest)); }
 .trend .t-now { fill: var(--primary); }
 .trend .t-over { fill: var(--error); }
+
+/* Home cards (order and visibility from Edit Home); two columns on wide screens */
+.home-grid { margin-top: 12px; }
+.home-cell + .home-cell { margin-top: 12px; }
+.home-cell > .quick-row, .home-cell > .quick-hint { margin-top: 0; }
+@media (min-width: 1000px) {
+  .home-grid { columns: 2; column-gap: 12px; }
+  .home-cell { break-inside: avoid; display: inline-block; width: 100%; margin: 0 0 12px !important; }
+}

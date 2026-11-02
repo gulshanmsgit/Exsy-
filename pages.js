@@ -168,7 +168,7 @@ function txRow(t, x, accFocus) {
   <button class="li" data-act="editEntry" data-id="${t.id}">
     <span class="avatar" style="--c:${color}">${ic(iconName || 'category')}</span>
     <span class="li-text"><span class="li-title">${esc(txTitle(t, x))} ${overdue ? `<span class="tag bad">overdue</span>` : ''}${isHomeClaim(t) ? `<span class="tag info" title="Taken from ${esc(payerName())}’s money">${ic('house')}${esc(payerName())}’s</span>` : ''}</span><span class="li-sub">${esc(sub)}</span></span>
-    <span class="li-end ${sign > 0 ? 'pos' : sign < 0 ? '' : 'muted'}">${sign > 0 ? '+' : sign < 0 ? '−' : ''}${inrAbs(t.amount)}</span>
+    <span class="li-end ${sign > 0 ? 'pos' : sign < 0 ? '' : 'muted'}">${sign > 0 ? '+' : sign < 0 ? '−' : ''}${inrAbsP(t.amount)}</span>
   </button></div>`;
 }
 function txList(list, x, opts = {}) {
@@ -240,82 +240,104 @@ function attention(x) {
   return items;
 }
 
+/* Home is a list of cards the owner can hide and reorder (Edit Home); the layout is kept per device */
+const HOME_CARDS = [
+  ['mood', 'Budget mood', 'savings'], ['quick', 'Quick buttons', 'bolt'], ['total', 'Total money', 'account_balance_wallet'],
+  ['attention', 'Needs attention', 'notifications'], ['trend', 'Spending trend', 'insights'], ['balances', 'Where the money is', 'payments'],
+  ['spending', 'Spending this month', 'pie_chart'], ['owe', 'People who owe', 'handshake'], ['recent', 'Recent entries', 'receipt_long'],
+  ['paste', 'Paste SMS button', 'content_paste']
+];
+function homeLayout() {
+  const l = lsGet('exsy.homeLayout', {}) || {}, ids = HOME_CARDS.map(c => c[0]);
+  const order = (l.order || []).filter(id => ids.includes(id));
+  return { order: [...order, ...ids.filter(id => !order.includes(id))], hidden: new Set(l.hidden || []) };
+}
 function pageHome() {
   const x = X(), k = UI.homeMonth || thisMonth();
   const books = UI.book === 'all' ? booksSorted() : booksSorted().filter(b => b.id === UI.book);
   const accs = D.accounts.filter(a => !a.archived && books.some(b => b.id === a.bookId));
   const byType = t => sum(accs.filter(a => a.type === t), a => accValue(a, x));
-  const total = sum(accs, a => accValue(a, x));
-  const cardOut = -byType('card');
-  const chitHeld = sum(accs, a => x.chitHeld.get(a.id) || 0);
-  const exp = D.txns.filter(t => t.type === 'expense' && t.date.startsWith(k) && inBook(t, x));
-  const inc = D.txns.filter(t => t.type === 'income' && t.date.startsWith(k) && inBook(t, x));
-  const prevK = addMonths(k, -1);
-  const prevExp = sum(D.txns.filter(t => t.type === 'expense' && t.date.startsWith(prevK) && inBook(t, x)), t => t.amount);
-  const spent = sum(exp, t => t.amount);
-  const cats = spendBreakdown(exp, x, t => t.categoryId, 5).map(([id, v], i) => ({ name: x.cat.get(id)?.name || (id === 'Others' ? 'Others' : 'Other'), value: v, color: PALETTE[i % PALETTE.length] }));
-  const shops = spendBreakdown(exp.filter(t => t.storeId), x, t => t.storeId, 5);
-  const att = attention(x);
-  const owedToMe = sum(D.people, p => Math.max(0, x.owes.get(p.id) || 0));
-  const iOwe = sum(D.people, p => Math.max(0, -(x.owes.get(p.id) || 0)));
-  const recent = D.txns.filter(t => inBook(t, x));
-
-  const bookTiles = UI.book === 'all' ? booksSorted().map(b => {
-    const v = sum(accsOf(b.id), a => accValue(a, x));
-    return `<button class="stat" data-act="setBook" data-id="${b.id}"><span>${esc(b.name)}</span><b>${inr(v)}</b></button>`;
-  }).join('') : '';
-
+  const parts = {
+    mood: () => moodCard(),
+    quick: () => quickRow(),
+    paste: () => `<div class="btn-row"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>`,
+    balances: () => balancesCard(x, accs),
+    trend: () => trendCard(),
+    total: () => {
+      const chitHeld = sum(accs, a => x.chitHeld.get(a.id) || 0);
+      const bookTiles = UI.book === 'all' ? booksSorted().map(b => `<button class="stat" data-act="setBook" data-id="${b.id}"><span>${esc(b.name)}</span><b>${inr(sum(accsOf(b.id), a => accValue(a, x)))}</b></button>`).join('') : '';
+      return `<div class="card primary">
+        <div class="hero-label">${UI.book === 'all' ? 'Total money (all books)' : esc(D.books.find(b => b.id === UI.book)?.name) + ' – total money'}</div>
+        <div class="hero-num">${inr(sum(accs, a => accValue(a, x)))}</div>
+        <div class="stats">
+          <a class="stat" href="#/accounts"><span>Cash</span><b>${inr(byType('cash'))}</b></a>
+          <a class="stat" href="#/accounts"><span>Bank</span><b>${inr(byType('bank') + byType('wallet'))}</b></a>
+          ${accs.some(a => a.type === 'invest') ? `<a class="stat" href="#/accounts"><span>Invested</span><b>${inr(byType('invest'))}</b></a>` : ''}
+          ${accs.some(a => a.type === 'card') ? `<a class="stat" href="#/accounts"><span>Card due</span><b>${inr(-byType('card'))}</b></a>` : ''}
+          ${bookTiles}
+        </div>
+        ${chitHeld > 0 ? `<div class="hero-label" style="margin-top:10px">${ic('info', 'sm')} Includes ${inr(chitHeld)} chit money you are holding</div>` : ''}
+        ${motherHeroLine()}
+      </div>`;
+    },
+    attention: () => {
+      const att = attention(x);
+      return att.length ? `<div class="card flush"><div class="card-title" style="padding:4px 16px 0">${ic('notifications')}Needs attention</div>
+        ${att.slice(0, 8).map(a => `<${a.go ? `a href="${a.go}"` : 'div'} class="li ${a.go ? '' : 'static'}" ${a.act && !a.btn ? a.act : ''}>
+          <span class="avatar" style="--c:${a.cls === 'bad' ? 'var(--error)' : a.cls === 'warn' ? 'var(--owe)' : 'var(--tertiary)'}">${ic(a.icon)}</span>
+          <span class="li-text"><span class="li-title">${esc(a.title)}</span><span class="li-sub">${esc(a.sub)}</span></span>
+          ${a.btn ? `<button class="btn tonal sm" ${a.act}>${a.btn}</button>` : ic('chevron_right', 'muted')}</${a.go ? 'a' : 'div'}>`).join('')}</div>` : '';
+    },
+    owe: () => {
+      const owedToMe = sum(D.people, p => Math.max(0, x.owes.get(p.id) || 0)), iOwe = sum(D.people, p => Math.max(0, -(x.owes.get(p.id) || 0)));
+      return owedToMe || iOwe ? `<a class="card" href="#/people" style="display:block;color:inherit"><div class="stats">
+        <div class="stat"><span>Others owe you</span><b class="owe">${inr(owedToMe)}</b></div>
+        <div class="stat"><span>You owe others</span><b class="${iOwe ? 'neg' : ''}">${inr(iOwe)}</b></div></div></a>` : '';
+    },
+    spending: () => {
+      const exp = D.txns.filter(t => t.type === 'expense' && t.date.startsWith(k) && inBook(t, x)), inc = D.txns.filter(t => t.type === 'income' && t.date.startsWith(k) && inBook(t, x));
+      const prevK = addMonths(k, -1), prevExp = sum(D.txns.filter(t => t.type === 'expense' && t.date.startsWith(prevK) && inBook(t, x)), t => t.amount), spent = sum(exp, t => t.amount);
+      const cats = spendBreakdown(exp, x, t => t.categoryId, 5).map(([id, v], i) => ({ name: x.cat.get(id)?.name || (id === 'Others' ? 'Others' : 'Other'), value: v, color: PALETTE[i % PALETTE.length] }));
+      const shops = spendBreakdown(exp.filter(t => t.storeId), x, t => t.storeId, 5);
+      return `<div class="card">
+        <div class="card-title">${ic('pie_chart')}<span style="flex:1">Spending</span>${monthNav('homeMonth', k, fmtMonth(k))}</div>
+        <div class="stats" style="margin-bottom:16px">
+          <div class="stat"><span>Spent</span><b class="neg">${inr(spent)}</b></div>
+          <div class="stat"><span>Income</span><b class="pos">${inr(sum(inc, t => t.amount))}</b></div>
+          <div class="stat"><span>vs ${MON[+prevK.slice(5) - 1]}</span><b class="${spent > prevExp ? 'neg' : 'pos'}">${prevExp ? (spent >= prevExp ? '▲ ' : '▼ ') + inrAbs(spent - prevExp) : '—'}</b></div>
+        </div>
+        ${cats.length ? `<div class="donut-wrap">${donut(cats)}<div class="legend">${cats.map(c => `<div><i style="background:${c.color}"></i><span>${esc(c.name)}</span><b>${inr(c.value)}</b></div>`).join('')}</div></div>` : `<div class="empty">${ic('pie_chart')}No spending in ${fmtMonth(k)}</div>`}
+        ${shops.length ? `<div class="form-label" style="margin-top:20px">Top shops</div><div class="bars">${shops.map(([id, v]) => `<div class="bar-row"><span>${ic(x.store.get(id)?.icon || 'storefront')}${esc(x.store.get(id)?.name || id)}</span><b>${inr(v)}</b><div class="track"><i style="width:${v / shops[0][1] * 100}%"></i></div></div>`).join('')}</div>` : ''}
+        <div class="btn-row" style="margin-top:12px"><a class="btn text" href="#/reports">${ic('bar_chart')}Full report</a></div>
+      </div>`;
+    },
+    recent: () => `<div class="card flush">
+        <div class="card-title" style="padding:4px 16px 0">${ic('receipt_long')}<span style="flex:1">Recent entries</span><a class="btn text sm" href="#/txns">See all</a></div>
+        ${txList(D.txns.filter(t => inBook(t, x)).sort(byDateDesc).slice(0, 6), x, { flat: true, empty: 'Tap “Add entry” to record your first expense' })}
+      </div>`
+  };
+  const L = homeLayout();
+  const cards = L.order.filter(id => !L.hidden.has(id)).map(id => { try { return parts[id](); } catch (e) { console.error(id, e); return ''; } }).filter(Boolean);
   const body = `
     ${bookFilterChips()}
     ${syncLine()}
-    <div style="margin-top:12px">${moodCard()}</div>
-    ${quickRow()}
-    <div class="cols two" style="margin-top:12px">
-      <div class="stack">
-        <div class="card primary">
-          <div class="hero-label">${UI.book === 'all' ? 'Total money (all books)' : esc(D.books.find(b => b.id === UI.book)?.name) + ' – total money'}</div>
-          <div class="hero-num">${inr(total)}</div>
-          <div class="stats">
-            <a class="stat" href="#/accounts"><span>Cash</span><b>${inr(byType('cash'))}</b></a>
-            <a class="stat" href="#/accounts"><span>Bank</span><b>${inr(byType('bank') + byType('wallet'))}</b></a>
-            ${accs.some(a => a.type === 'invest') ? `<a class="stat" href="#/accounts"><span>Invested</span><b>${inr(byType('invest'))}</b></a>` : ''}
-            ${accs.some(a => a.type === 'card') ? `<a class="stat" href="#/accounts"><span>Card due</span><b>${inr(cardOut)}</b></a>` : ''}
-            ${bookTiles}
-          </div>
-          ${chitHeld > 0 ? `<div class="hero-label" style="margin-top:10px">${ic('info', 'sm')} Includes ${inr(chitHeld)} chit money you are holding</div>` : ''}
-          ${motherHeroLine()}
-        </div>
-        <div class="btn-row"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>
-        ${balancesCard(x, accs)}
-        ${att.length ? `<div class="card flush"><div class="card-title" style="padding:4px 16px 0">${ic('notifications')}Needs attention</div>
-          ${att.slice(0, 8).map(a => `<${a.go ? `a href="${a.go}"` : 'div'} class="li ${a.go ? '' : 'static'}" ${a.act && !a.btn ? a.act : ''}>
-            <span class="avatar" style="--c:${a.cls === 'bad' ? 'var(--error)' : a.cls === 'warn' ? '#c8742a' : 'var(--tertiary)'}">${ic(a.icon)}</span>
-            <span class="li-text"><span class="li-title">${esc(a.title)}</span><span class="li-sub">${esc(a.sub)}</span></span>
-            ${a.btn ? `<button class="btn tonal sm" ${a.act}>${a.btn}</button>` : ic('chevron_right', 'muted')}</${a.go ? 'a' : 'div'}>`).join('')}</div>` : ''}
-        ${owedToMe || iOwe ? `<a class="card" href="#/people" style="display:block;color:inherit"><div class="stats">
-          <div class="stat"><span>Others owe you</span><b class="pos">${inr(owedToMe)}</b></div>
-          <div class="stat"><span>You owe others</span><b class="${iOwe ? 'neg' : ''}">${inr(iOwe)}</b></div></div></a>` : ''}
-      </div>
-      <div class="stack">
-        ${trendCard()}
-        <div class="card">
-          <div class="card-title">${ic('pie_chart')}<span style="flex:1">Spending</span>${monthNav('homeMonth', k, fmtMonth(k))}</div>
-          <div class="stats" style="margin-bottom:16px">
-            <div class="stat"><span>Spent</span><b>${inr(spent)}</b></div>
-            <div class="stat"><span>Income</span><b class="pos">${inr(sum(inc, t => t.amount))}</b></div>
-            <div class="stat"><span>vs ${MON[+prevK.slice(5) - 1]}</span><b class="${spent > prevExp ? 'neg' : 'pos'}">${prevExp ? (spent >= prevExp ? '▲ ' : '▼ ') + inrAbs(spent - prevExp) : '—'}</b></div>
-          </div>
-          ${cats.length ? `<div class="donut-wrap">${donut(cats)}<div class="legend">${cats.map(c => `<div><i style="background:${c.color}"></i><span>${esc(c.name)}</span><b>${inr(c.value)}</b></div>`).join('')}</div></div>` : `<div class="empty">${ic('pie_chart')}No spending in ${fmtMonth(k)}</div>`}
-          ${shops.length ? `<div class="form-label" style="margin-top:20px">Top shops</div><div class="bars">${shops.map(([id, v]) => `<div class="bar-row"><span>${ic(x.store.get(id)?.icon || 'storefront')}${esc(x.store.get(id)?.name || id)}</span><b>${inr(v)}</b><div class="track"><i style="width:${v / shops[0][1] * 100}%"></i></div></div>`).join('')}</div>` : ''}
-          <div class="btn-row" style="margin-top:12px"><a class="btn text" href="#/reports">${ic('bar_chart')}Full report</a></div>
-        </div>
-        <div class="card flush">
-          <div class="card-title" style="padding:4px 16px 0">${ic('receipt_long')}<span style="flex:1">Recent entries</span><a class="btn text sm" href="#/txns">See all</a></div>
-          ${txList(recent.slice().sort(byDateDesc).slice(0, 6), x, { flat: true, empty: 'Tap “Add entry” to record your first expense' })}
-        </div>
-      </div>
-    </div>`;
+    <div class="home-grid">${cards.map(c => `<div class="home-cell">${c}</div>`).join('')}</div>
+    <div class="btn-row" style="justify-content:center;margin-top:16px"><button class="btn text" data-act="editHome">${ic('tune')}Edit Home</button></div>`;
   return { title: 'Exsy', body };
+}
+function openHomeEdit() {
+  const L = homeLayout(), names = Object.fromEntries(HOME_CARDS.map(([id, n, i]) => [id, [n, i]]));
+  const s = openSheet(`${sheetHead('Edit Home')}
+    <p class="lead">Show, hide and reorder the cards on Home. This is saved on this device, so phone and laptop can differ.</p>
+    <div class="card flush" style="margin-top:12px">${L.order.map((id, i) => `<div class="li static">
+      <span class="avatar">${ic(names[id][1])}</span><span class="li-text"><span class="li-title">${names[id][0]}</span></span>
+      <button class="icon-btn" data-hup="${id}" aria-label="Move up" ${i ? '' : 'disabled'}>${ic('arrow_upward')}</button>
+      <label class="switch-row" style="padding:0 4px"><input type="checkbox" data-hshow="${id}" ${L.hidden.has(id) ? '' : 'checked'} aria-label="Show ${names[id][0]}"></label></div>`).join('')}</div>
+    <div class="sheet-actions"><button class="btn text" id="he-reset">${ic('restart_alt')}Default layout</button><button class="btn filled" data-act="closeSheet">${ic('check')}Done</button></div>`);
+  const keep = l => { lsSet('exsy.homeLayout', { order: l.order, hidden: [...l.hidden] }); scheduleRender(); };
+  $$('[data-hshow]', s).forEach(cb => cb.onchange = () => { const l = homeLayout(); if (cb.checked) l.hidden.delete(cb.dataset.hshow); else l.hidden.add(cb.dataset.hshow); keep(l); });
+  $$('[data-hup]', s).forEach(b => b.onclick = () => { const l = homeLayout(), i = l.order.indexOf(b.dataset.hup); if (i > 0) { [l.order[i - 1], l.order[i]] = [l.order[i], l.order[i - 1]]; keep(l); openHomeEdit(); } });
+  s.querySelector('#he-reset').onclick = () => { try { localStorage.removeItem('exsy.homeLayout'); } catch { /* storage blocked */ } scheduleRender(); openHomeEdit(); };
 }
 
 /* ============================================================
@@ -485,7 +507,7 @@ function openValueForm(id) {
    ============================================================ */
 function owesText(v) {
   if (Math.abs(v) < 0.005) return `<span class="muted">Settled</span>`;
-  return v > 0 ? `<span class="pos">${inr(v)}</span><small>owes you</small>` : `<span class="neg">${inrAbs(v)}</span><small>you owe</small>`;
+  return v > 0 ? `<span class="owe">${inr(v)}</span><small>owes you</small>` : `<span class="neg">${inrAbs(v)}</span><small>you owe</small>`;
 }
 function pagePeople() {
   const x = X();

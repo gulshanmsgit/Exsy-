@@ -4,7 +4,8 @@
 
 const budgetPrefs = () => D.prefs.find(p => p.id === 'budget') || {};
 const saveBudgetPrefs = patch => save('prefs', { ...budgetPrefs(), id: 'budget', ...patch });
-const budgetScope = () => { const s = budgetPrefs().scope; return s && (s === 'all' || D.books.some(b => b.id === s)) ? s : 'all'; };
+// Budget counts your own spending unless you choose otherwise
+const budgetScope = () => { const s = budgetPrefs().scope; return s && (s === 'all' || D.books.some(b => b.id === s)) ? s : meBook()?.id || 'all'; };
 const isCorrection = t => /balance correction/i.test(X().cat.get(t.categoryId)?.name || '');
 // Spending that counts: expenses (not balance corrections) from accounts in the chosen book(s)
 function spendIn(k, { scope = budgetScope(), catId = '' } = {}) {
@@ -55,7 +56,7 @@ function pageBudgets() {
     <div class="card" style="margin-top:12px"><div class="card-title">${ic('savings')}Monthly budget</div>
       <div class="grid2">${field('Total for a month', `<input id="bud-total" inputmode="decimal" value="${total || ''}" placeholder="${last3 ? 'e.g. ' + last3 : 'e.g. 20000'}">`, last3 ? `Average of the last 3 months: ${inr(last3)}` : '')}</div>
       <div class="form-label">Counts spending from</div>
-      <div class="chips">${[{ id: 'all', name: 'All books' }, ...booksSorted()].map(b => `<button class="chip ${scope === b.id ? 'on' : ''}" data-act="budScope" data-b="${b.id}">${scope === b.id ? ic('check') : ''}${esc(b.name)}</button>`).join('')}</div>
+      <div class="chips">${[meBook(), { id: 'all', name: 'All books' }, ...booksSorted().filter(b => b.id !== meBook()?.id)].filter(Boolean).map(b => `<button class="chip ${scope === b.id ? 'on' : ''}" data-act="budScope" data-b="${b.id}">${scope === b.id ? ic('check') : ''}${esc(b.name)}</button>`).join('')}</div>
       <div class="btn-row" style="margin-top:12px"><button class="btn filled" data-act="budSave">${ic('check')}Save</button></div></div>
     <div class="section-head" style="margin-top:12px"><h2>By category</h2></div>
     <div class="card flush">${rows.map(r => {
