@@ -38,6 +38,10 @@ Keep the sync code / device link private: whoever has it can open the book.
 
 ## Faster entries
 
+- **Sums in any amount box:** phone number pads have no + key, so every amount has a row of **+ − × ÷ = ⌫ C** keys.
+- **Paying for someone:** *For whom* lists your people and **New person**. With **They will pay me back** on, it is
+  saved as money lent to them (shows in People); switched off, it is a gift *for* them.
+
 - **Paste bank SMS / UPI message** (Home, or *Paste SMS* in the entry form): Exsy reads amount, paid/received,
   account (bank name or the last 4 digits you set on the account), date, UPI ref and the person or shop.
   A name in People becomes *Lent* / *Got back*; a chit member who still owes becomes their chit payment;

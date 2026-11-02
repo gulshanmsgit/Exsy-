@@ -375,3 +375,9 @@ body { overscroll-behavior-y: contain; }
 .emi-table td, .emi-table th { padding: 0 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .emi-table td small { font-size: 10px; color: var(--on-surface-variant); }
 .emi-table tr.done td, .emi-table tr.done th { color: var(--on-surface-variant); }
+/* + − × ÷ = keys under amount boxes (phone number pads have no + key) */
+.calc-keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 2px; }
+.calc-keys button { height: 40px; border: 0; border-radius: 12px; background: var(--sc-highest); color: var(--on-surface); font-size: 20px; font-weight: 500; cursor: pointer; display: grid; place-items: center; touch-action: manipulation; }
+.calc-keys button[data-k="="] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.calc-keys button[data-k="C"] { font-size: 15px; color: var(--error); }
+.calc-keys button:active { transform: scale(.94); }

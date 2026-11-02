@@ -58,7 +58,7 @@ function refreshNow() {
 let suppressClick = false;
 function duplicateTxn(id) {
   const t = D.txns.find(x => x.id === id); if (!t) return;
-  const { id: _i, createdAt: _c, updatedAt: _u, recurringId: _r, ...rest } = t;
+  const { id: _i, createdAt: _c, updatedAt: _u, recurringId: _r, emiId: _e, emiNo: _n, ...rest } = t;
   const n = save('txns', { ...rest, date: today() });
   snack(`Copied to today: ${txTitle(n, X())} ${inr(n.amount)}`, { label: 'Undo', fn: () => removeDoc('txns', n.id) });
 }

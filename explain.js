@@ -28,6 +28,11 @@ function meaningOf(v, orig) {
   const x = X(), amt = evalAmount(v.amount);
   if (!(amt > 0)) return 'Type the amount to see what this entry does.';
   if (!v.accountId) return 'Choose the account.';
+  // Paid for a person who pays it back = money lent to them
+  if (v.type === 'expense' && String(v.forWhom || '').startsWith('p:') && v.payBack) {
+    const pid = v.forWhom.slice(2);
+    return meaningOf({ ...v, type: 'lend', personId: pid, newPerson: v.forNewPerson }, orig);
+  }
   const A = inr(amt), acc = accPhrase(v.accountId), aObj = x.acc.get(v.accountId), isCash = aObj?.type === 'cash';
   const person = v.personId && v.personId !== '__new' ? x.person.get(v.personId)?.name : (v.newPerson || '').trim() || 'this person';
   const owes = v.personId && x.owes.get(v.personId) || 0, oldOwe = orig && orig.personId === v.personId ? (orig.type === 'lend' || orig.type === 'repay' ? 1 : -1) * num(orig.amount) : 0;
@@ -35,7 +40,7 @@ function meaningOf(v, orig) {
   const lines = [];
   switch (v.type) {
     case 'expense': {
-      const whom = v.forWhom === 'home' ? 'the home' : v.forWhom ? (x.book.get(v.forWhom)?.primary ? (ownerOf(v.forWhom) === 'your' ? 'you' : x.book.get(v.forWhom).name) : x.book.get(v.forWhom)?.name) : '';
+      const whom = v.forWhom === 'home' ? 'the home' : String(v.forWhom || '').startsWith('p:') ? `${(v.forWhom === 'p:__new' ? (v.forNewPerson || '').trim() : x.person.get(v.forWhom.slice(2))?.name) || 'someone'} (they don’t pay it back)` : v.forWhom ? (x.book.get(v.forWhom)?.primary ? (ownerOf(v.forWhom) === 'your' ? 'you' : x.book.get(v.forWhom).name) : x.book.get(v.forWhom)?.name) : '';
       lines.push(`${A} paid from ${acc}${whom ? ` for ${whom}` : ''}${cat ? ` – ${cat}` : ''}${shop ? ` at ${shop}` : ''}.`);
       lines.push(balLine(v.accountId, -amt, orig));
       if (v.forWhom === 'home' && homePayer()) {
@@ -75,7 +80,14 @@ function meaningBox() { return `<div class="meaning" id="ef-meaning" aria-live="
 function wireMeaning(form, f) {
   const box = form.querySelector('#ef-meaning p'); if (!box) return;
   const orig = f.id ? D.txns.find(t => t.id === f.id) : null;
-  const upd = () => { try { box.textContent = meaningOf({ ...f, homeClaim: false, ...readForm(form), homeClaim: !!form.querySelector('input[name=homeClaim]:checked') && !form.querySelector('#ef-claim')?.classList.contains('hide') }, orig); } catch (e) { console.error(e); box.textContent = ''; } };
+  const upd = () => {
+    try {
+      const v = readForm(form);
+      box.textContent = meaningOf({ ...f, ...v,
+        homeClaim: !!form.querySelector('input[name=homeClaim]:checked') && !form.querySelector('#ef-claim')?.classList.contains('hide'),
+        payBack: !!form.querySelector('input[name=payBack]:checked') }, orig);
+    } catch (e) { console.error(e); box.textContent = ''; }
+  };
   form.addEventListener('input', upd);
   form.addEventListener('change', () => setTimeout(upd, 0));
   upd();

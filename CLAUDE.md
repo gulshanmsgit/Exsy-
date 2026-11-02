@@ -36,6 +36,9 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   `emiTick()` (called after every render) adds due bills as txns with fixed ids `emi_{emiId}_{k}` and records `posted` k's
   (idempotent across devices; a deleted bill is not re-added). Person EMI → type lend.
 - `explain.js`: `meaningOf(v, orig)` builds the "What this means" text (balances before → after, Mother's money effect).
+- `addCalcKeys` (app.js, run by `openSheet`) puts + − × ÷ = ⌫ C under every `.amount-field`; `evalAmount` accepts × ÷ −.
+- Expense "For whom" can be a person (`p:<id>` / `p:__new`): payBack on → saved as type lend (keeps category/shop);
+  off → expense with forWhom `p:<id>`. Card opening is entered as the positive amount due, stored negative.
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -45,6 +48,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.8: calc keys, pay-for-a-person + New person, card due entry fix, gift/loan edit fixes, EMI copy fix.
 - v1.7: EMIs (card/loan, interest per month/year, GST, auto bills) + "What this means" box in the entry form.
 - v1.6: monthly money fix (Save replaced nothing → wrong start month kept counting), paid-next-month rule, redraw on resume/date change.
 - v1.5: simplified to one "Mother's money" balance (monthly money + home costs + given/received); switch moved up in the entry form.

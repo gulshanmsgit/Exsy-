@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -52,7 +52,7 @@ function inr(n, sign) {
 }
 const inrAbs = n => inr(Math.abs(+n || 0));
 function evalAmount(s) {
-  s = String(s ?? '').replace(/[,₹\s]/g, '');
+  s = String(s ?? '').replace(/[,₹\s]/g, '').replace(/×/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-').replace(/[*/+\-]+$/, '');
   if (!s) return 0;
   if (!/^[\d+\-*/.()]+$/.test(s)) return NaN;
   try { const v = Function('"use strict";return (' + s + ')')(); return isFinite(v) ? round2(v) : NaN; } catch { return NaN; }
@@ -274,6 +274,7 @@ function accLabel(id, x) {
 function forWhomLabel(t, x) {
   if (t.type !== 'expense' || !t.forWhom) return '';
   if (t.forWhom === 'home') return 'for Home';
+  if (t.forWhom.startsWith('p:')) return 'for ' + (x.person.get(t.forWhom.slice(2))?.name || 'someone');
   const b = x.book.get(t.forWhom);
   const accBook = x.acc.get(t.accountId)?.bookId;
   return b && b.id !== accBook ? 'for ' + b.name : '';
@@ -377,7 +378,34 @@ function openSheet(html) {
     sheetOpen = true;
     if (popPending) queuedPush = true; else history.pushState({ sheet: 1 }, '');
   }
-  return sheetRoot.querySelector('.sheet');
+  const sheet = sheetRoot.querySelector('.sheet');
+  addCalcKeys(sheet);
+  return sheet;
+}
+// Phone number pads have no + − × ÷ keys: add them under every amount box so sums like 250+120 can be typed
+function addCalcKeys(root) {
+  $$('.amount-field', root).forEach(label => {
+    const inp = label.querySelector('input'); if (!inp || label.nextElementSibling?.classList.contains('calc-keys')) return;
+    const keys = document.createElement('div');
+    keys.className = 'calc-keys';
+    keys.innerHTML = ['+', '−', '×', '÷', '='].map(k => `<button type="button" data-k="${k}" aria-label="${{ '+': 'plus', '−': 'minus', '×': 'times', '÷': 'divide', '=': 'work it out' }[k]}">${k}</button>`).join('')
+      + `<button type="button" data-k="back" aria-label="Delete last">${ic('backspace', 'sm')}</button><button type="button" data-k="C" aria-label="Clear">C</button>`;
+    label.after(keys);
+    // keep the keyboard open: don't let the button take focus away from the amount box
+    keys.addEventListener('pointerdown', e => { if (e.target.closest('button')) e.preventDefault(); });
+    keys.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const k = b.dataset.k; let v = inp.value;
+      if (k === 'C') v = '';
+      else if (k === 'back') v = v.slice(0, -1);
+      else if (k === '=') { const r = evalAmount(v); if (r > 0 || r === 0) v = String(r); }
+      else { const base = v.replace(/[+−×÷*/-]$/, ''); v = base ? base + k : ''; }   // one operator at a time, never first
+      inp.value = v;
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.focus();
+      buzz(6);
+    });
+  });
 }
 function closeSheet(fromPop) {
   if (!sheetOpen) return;

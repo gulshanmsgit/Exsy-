@@ -40,7 +40,11 @@ function renderEntry(f) {
     ${accChips('accountId', f.accountId)}
     ${ty === 'transfer' ? `<div class="form-label">To</div>${accChips('toAccountId', f.toAccountId)}` : ''}
     ${ty === 'expense' ? `<div class="form-label">For whom</div>
-      <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}</div>
+      <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}
+        ${people.map(p => chip('forWhom', 'p:' + p.id, p.name, f.forWhom === 'p:' + p.id, 'handshake')).join('')}${chip('forWhom', 'p:__new', 'New person', f.forWhom === 'p:__new', 'person_add')}</div>
+      <label class="field ${f.forWhom === 'p:__new' ? '' : 'hide'}" id="ef-fw-new" style="margin-top:8px"><span>Person’s name</span><input name="forNewPerson" value="${esc(f.forNewPerson || '')}" placeholder="e.g. Ravi, Cousin Priya"></label>
+      <label class="switch-row claim-row ${String(f.forWhom || '').startsWith('p:') ? '' : 'hide'}" id="ef-payback"><span><span>They will pay me back</span><small>Saved as money lent to them – shows in People with what they owe</small></span>
+        <input type="checkbox" name="payBack" ${(f.payBack ?? !f.id) ? 'checked' : ''}></label>
       ${claimSwitch(f)}` : ''}
     ${isCat ? `<div class="form-label">Category</div>${usageChips('categoryId', cats, f.categoryId, x.catUse)}` : ''}
     ${ty === 'expense' ? `<div class="form-label">Where (shop)</div>${usageChips('storeId', [{ id: '', name: 'None', icon: '' }, ...D.stores], f.storeId || '', x.storeUse, 8)}` : ''}
@@ -61,13 +65,18 @@ function renderEntry(f) {
   const form = s.querySelector('#ef');
   wireMore(form);
   const amt = s.querySelector('#ef-amount'), hint = s.querySelector('#ef-hint');
-  amt.oninput = () => { const v = evalAmount(amt.value); hint.textContent = /[+\-*/]/.test(amt.value) && v > 0 ? '= ' + inr(v) : 'You can type sums like 250+120'; };
+  amt.oninput = () => { const v = evalAmount(amt.value); hint.textContent = /[+\-*/×÷−]/.test(amt.value) && v > 0 ? '= ' + inr(v) : 'Use the + − × ÷ keys for sums like 250+120'; };
   amt.oninput();
   form.onchange = e => {
     const n = e.target.name;
     if (n === 'type') { Object.assign(f, readForm(form), { type: e.target.value }); if (f.type !== ty && (ty === 'income' || f.type === 'income')) f.categoryId = ''; renderEntry(f); }
     else if (n === 'accountId') { const m = ACC_T[X().acc.get(e.target.value)?.type]?.mode; const r = m && form.querySelector(`#ef-modes input[value="${m}"]`); if (r) r.checked = true; syncClaimSwitch(form); }
-    else if (n === 'forWhom') syncClaimSwitch(form);
+    else if (n === 'forWhom') {
+      syncClaimSwitch(form);
+      s.querySelector('#ef-fw-new').classList.toggle('hide', e.target.value !== 'p:__new');
+      s.querySelector('#ef-payback').classList.toggle('hide', !e.target.value.startsWith('p:'));
+      if (e.target.value === 'p:__new') setTimeout(() => form.forNewPerson.focus(), 50);
+    }
     else if (n === 'personId') s.querySelector('#ef-newp').classList.toggle('hide', e.target.value !== '__new');
     else if (n === 'storeId' && e.target.value && !form.querySelector('input[name=categoryId]:checked')) {
       const c = catForStore(e.target.value), r = c && form.querySelector(`input[name=categoryId][value="${c}"]`);
@@ -104,8 +113,25 @@ function submitEntry(f, form, again) {
   if (v.type === 'expense') {
     doc.storeId = v.storeId || ''; doc.forWhom = v.forWhom || 'home';
     if (claimApplies(doc.accountId, doc.forWhom)) doc.homeClaim = !!v.homeClaim;
+    // Paid for a person: with "they will pay me back" it is money lent to them (keeps category and shop)
+    if (doc.forWhom.startsWith('p:')) {
+      let pid = doc.forWhom.slice(2);
+      if (pid === '__new') {
+        const n = (v.forNewPerson || '').trim();
+        if (!n) { snack('Type the person’s name'); form.forNewPerson?.focus(); return; }
+        const ex = D.people.find(p => p.name.toLowerCase() === n.toLowerCase());
+        pid = ex ? ex.id : save('people', { name: n }).id;
+      }
+      if (v.payBack) { doc.type = 'lend'; doc.personId = pid; delete doc.forWhom; }
+      else doc.forWhom = 'p:' + pid;
+    }
   }
-  if (PERSON_T.has(v.type)) doc.personId = v.personId;
+  if (PERSON_T.has(v.type)) {
+    doc.personId = v.personId;
+    // a "paid for a person" loan keeps its category and shop when edited later
+    if (f.categoryId && !doc.categoryId) doc.categoryId = f.categoryId;
+    if (f.storeId && !doc.storeId) doc.storeId = f.storeId;
+  }
   if (v.type === 'lend' && v.dueDate) doc.dueDate = v.dueDate;
   if (f.recurringId) {
     doc.recurringId = f.recurringId;
@@ -399,7 +425,7 @@ function openAccountForm(id, bookId) {
       ${field('Account name', `<input name="name" value="${esc(a.name || '')}" placeholder="e.g. SBI, Canara Bank, Cash, Groww" required>`)}
       <div class="form-label">Type</div><div class="chips">${Object.entries(ACC_T).map(([k, v]) => chip('type', k, v.label, a.type === k, v.icon)).join('')}</div>
       <div class="form-label">Whose money (book)</div><div class="chips">${booksSorted().map(b => chip('bookId', b.id, b.name, a.bookId === b.id, 'person')).join('')}</div>
-      <div class="grid2">${field(a.type === 'card' ? 'Outstanding at start (enter as minus, e.g. -4500)' : 'Balance at start', `<input name="opening" inputmode="decimal" value="${esc(a.opening ?? '')}" placeholder="0">`)}
+      <div class="grid2"><label class="field"><span id="af-op-label">${a.type === 'card' ? 'Amount due on the card now' : 'Balance at start'}</span><input name="opening" inputmode="decimal" value="${esc(a.type === 'card' && a.opening ? Math.abs(num(a.opening)) : a.opening ?? '')}" placeholder="0"></label>
         ${field('As on date', `<input type="date" name="openingDate" value="${esc(a.openingDate || '')}">`)}</div>
       ${field('Last 4 digits of account / card (optional)', `<input name="last4" inputmode="numeric" maxlength="4" value="${esc(a.last4 || '')}" placeholder="e.g. 1234">`, 'Helps Exsy pick the right account when you paste a bank SMS.')}
       <div class="grid3 ${a.type === 'card' ? '' : 'hide'}" id="af-card">
@@ -411,13 +437,15 @@ function openAccountForm(id, bookId) {
     </div>
     <div class="sheet-actions"><button type="button" class="btn text" data-act="closeSheet">Cancel</button><button class="btn filled">${ic('check')}Save</button></div></form>`);
   const f = s.querySelector('#af');
-  f.onchange = e => { if (e.target.name === 'type') { s.querySelector('#af-card').classList.toggle('hide', e.target.value !== 'card'); s.querySelector('#af-inv').classList.toggle('hide', e.target.value !== 'invest'); } };
+  f.onchange = e => { if (e.target.name === 'type') { s.querySelector('#af-card').classList.toggle('hide', e.target.value !== 'card'); s.querySelector('#af-inv').classList.toggle('hide', e.target.value !== 'invest'); s.querySelector('#af-op-label').textContent = e.target.value === 'card' ? 'Amount due on the card now' : 'Balance at start'; } };
   f.onsubmit = e => {
     e.preventDefault();
     const v = readForm(f);
     if (!v.name.trim()) return;
-    const op = evalAmount(v.opening);
-    save('accounts', { ...a, name: v.name.trim(), type: v.type, bookId: v.bookId, opening: isNaN(op) ? 0 : op, openingDate: v.openingDate || '', limit: v.limit ? num(v.limit) : '', statementDay: v.statementDay || '', dueDay: v.dueDay || '', value: v.value === '' || v.value == null ? (v.type === 'invest' ? '' : a.value ?? '') : num(v.value), valueDate: v.value !== a.value && v.value ? today() : a.valueDate || '', archived: !!v.archived, last4: (v.last4 || '').replace(/\D/g, ''), order: a.order ?? D.accounts.length });
+    let op = evalAmount(v.opening);
+    if (isNaN(op)) op = 0;
+    if (v.type === 'card') op = -Math.abs(op);   // a card's opening is money owed: always stored as minus
+    save('accounts', { ...a, name: v.name.trim(), type: v.type, bookId: v.bookId, opening: op, openingDate: v.openingDate || '', limit: v.limit ? num(v.limit) : '', statementDay: v.statementDay || '', dueDay: v.dueDay || '', value: v.value === '' || v.value == null ? (v.type === 'invest' ? '' : a.value ?? '') : num(v.value), valueDate: v.value !== a.value && v.value ? today() : a.valueDate || '', archived: !!v.archived, last4: (v.last4 || '').replace(/\D/g, ''), order: a.order ?? D.accounts.length });
     closeSheet(); snack('Account saved');
   };
   const del = s.querySelector('#af-del');

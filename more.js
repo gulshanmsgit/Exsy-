@@ -45,7 +45,7 @@ function pageReports() {
       ${trend}
       ${card('Spent by category', 'category', bars(byCat, k => x.cat.get(k)?.name || k, k => x.cat.get(k)?.icon || 'category'))}
       ${card('Spent by shop', 'storefront', bars(byStore, k => x.store.get(k)?.name || k, k => x.store.get(k)?.icon || 'storefront'))}
-      ${card('Spent for whom', 'groups', bars(byWhom, k => k === 'home' ? 'Home' : x.book.get(k)?.name || k))}
+      ${card('Spent for whom', 'groups', bars(byWhom, k => k === 'home' ? 'Home' : k.startsWith('p:') ? x.person.get(k.slice(2))?.name || 'Someone' : x.book.get(k)?.name || k))}
       ${card('Paid from', 'account_balance_wallet', bars(byAcc, k => k === 'Others' ? k : accLabel(k, x)))}
       ${card('Income by type', 'trending_up', bars(byInc, k => x.cat.get(k)?.name || k, k => x.cat.get(k)?.icon || 'savings'))}
     </div>`;
