@@ -51,6 +51,10 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   `auto_{expenseId}` Mother's bank → my ICICI (`prefs/home.autoBack`); `syncAutoBack` after every save, `txnWithLinked`
   for deletes. Bottom bar: `navMiddle()` from localStorage `exsy.nav` (3 of `NAV_CHOICES`), `activeTab()` for highlights.
 - Logo = "Spend ring" (owner's choice, Nov 2026).
+- Google sign-in (`account.js`): mode 'account' → `cloudStore(cfg, uid, 'users')`; `fbInit` loads app+firestore+auth.
+  Popup first, redirect fallback (handled in `connect('account')`). `exsy.migrateFrom` {mode:'local'|'cloud', code} →
+  `migrateIntoAccount` copies into an EMPTY account only (batches of 400). Sync-code mode stays (owner's decision).
+- Business plan (owner, Nov 2026): free = this device only; PAID = live sync + Google Drive backup (+ family sharing).
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -60,6 +64,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.12: Continue with Google (private users/{uid}), move data from sync code / device into the account.
 - v1.11: Spend ring logo, customizable bottom bar, automatic pay-back of online home bills, simpler Mother's page.
 - v1.10: new logo, Edit Home, whole rupees, owed colour, budget defaults to Me.
 - v1.9: budgets + mood emoji + trend graphs on Home, EMI PDF/share, person statement options.

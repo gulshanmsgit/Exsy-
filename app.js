@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.12.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -76,7 +76,7 @@ const randCode = (n = 32) => { const abc = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLM
 
 /* ---------- icons (Material Symbols, only the glyphs we use are downloaded) ---------- */
 const ICON_CHOICES = ['shopping_basket', 'nutrition', 'local_drink', 'cleaning_services', 'medication', 'bolt', 'water_drop', 'local_fire_department', 'wifi', 'local_gas_station', 'directions_bus', 'restaurant', 'checkroom', 'school', 'house', 'account_balance', 'shield', 'redeem', 'temple_hindu', 'build', 'spa', 'movie', 'category', 'payments', 'family_restroom', 'percent', 'currency_exchange', 'groups', 'savings', 'shopping_cart', 'storefront', 'shopping_bag', 'local_shipping', 'store', 'local_pharmacy', 'delivery_dining', 'language', 'more_horiz', 'pets', 'child_care', 'sports_cricket', 'flight', 'train', 'two_wheeler', 'directions_car', 'phone_iphone', 'tv', 'laptop', 'celebration', 'volunteer_activism', 'work', 'receipt', 'local_cafe', 'bakery_dining', 'egg', 'set_meal', 'lunch_dining', 'local_laundry_service', 'content_cut', 'fitness_center', 'hotel', 'checklist', 'local_hospital', 'agriculture', 'construction', 'card_giftcard', 'person', 'face', 'elderly', 'elderly_woman', 'woman', 'man', 'home_work'];
-const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description', 'content_paste', 'refresh', 'cloud_upload', 'vibration', 'arrow_upward', 'event_available', 'bolt', 'calculate'];
+const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description', 'content_paste', 'refresh', 'cloud_upload', 'vibration', 'arrow_upward', 'event_available', 'bolt', 'calculate', 'login', 'logout', 'verified_user'];
 const ALL_ICONS = new Set([...ICON_CHOICES, ...UI_ICONS]);
 (function loadIconFont() {
   const names = [...ALL_ICONS].sort().join(',');
@@ -129,7 +129,7 @@ const DEFAULT_STORES = [['DMart', 'storefront'], ['Amazon', 'shopping_cart'], ['
    Layout in Firestore: moneybooks/{syncCode}/{collection}/{id}
    ============================================================ */
 const D = Object.fromEntries(COLLS.map(c => [c, []]));
-let store = null, loaded = new Set(), sigs = {}, storeErr = '';
+let store = null, loaded = new Set(), sigs = {}, storeErr = '', authUser = null;
 let VER = 0, memo = { v: -1 };
 
 function localStore() {
@@ -145,18 +145,22 @@ function localStore() {
 }
 
 let fbMods = null;
-async function cloudStore(cfg, ws) {
-  if (!fbMods) {
-    const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
-    const [A, F] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js')]);
-    const app = A.initializeApp(cfg);
-    let db;
-    try { db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) }); }
-    catch { db = F.getFirestore(app); }
-    fbMods = { F, db };
-  }
-  const { F, db } = fbMods;
-  const ref = (c, id) => F.doc(db, FIRESTORE_ROOT, ws, c, id);
+// Firebase app + Firestore (offline cache) + Auth, loaded once from gstatic
+async function fbInit(cfg) {
+  if (fbMods) return fbMods;
+  const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+  const [A, F, Au] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js'), import(base + 'firebase-auth.js')]);
+  const app = A.initializeApp(cfg);
+  let db;
+  try { db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) }); }
+  catch { db = F.getFirestore(app); }
+  fbMods = { F, Au, db, auth: Au.getAuth(app) };
+  return fbMods;
+}
+// root 'moneybooks' + sync code (shared by code) or 'users' + Google uid (private to that account)
+async function cloudStore(cfg, ws, root = FIRESTORE_ROOT) {
+  const { F, db } = await fbInit(cfg);
+  const ref = (c, id) => F.doc(db, root, ws, c, id);
   const unsubs = [];
   let cbs = null;
   const cloud = {
@@ -164,7 +168,7 @@ async function cloudStore(cfg, ws) {
     // metadata changes included so "uploading…" clears once the server has the write
     start(cb, err) {
       cbs = [cb, err];
-      for (const c of COLLS) unsubs.push(F.onSnapshot(F.collection(db, FIRESTORE_ROOT, ws, c), { includeMetadataChanges: true },
+      for (const c of COLLS) unsubs.push(F.onSnapshot(F.collection(db, root, ws, c), { includeMetadataChanges: true },
         s => cb(c, s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata.fromCache, s.metadata.hasPendingWrites), e => err(c, e)));
     },
     put: (c, id, d) => F.setDoc(ref(c, id), clean(d)),
@@ -229,8 +233,20 @@ async function connect(mode) {
     if (!cfg || !code) { store = null; return; }
     try { store = await cloudStore(cfg, code); }
     catch (e) { console.error(e); store = localStore(); storeErr = 'Could not load Firebase (offline on first use?). Showing this device\'s data.'; }
+  } else if (mode === 'account') {
+    // Google sign-in: data under users/{uid}, readable only by that signed-in account
+    const cfg = FIREBASE_CONFIG || lsGet(LS.cfg, null);
+    if (!cfg) { store = null; return; }
+    try {
+      const fb = await fbInit(cfg);
+      try { await fb.Au.getRedirectResult(fb.auth); } catch (e) { console.warn('redirect sign-in', e); }
+      authUser = await new Promise(res => { const un = fb.Au.onAuthStateChanged(fb.auth, u => { un(); res(u); }); });
+      if (!authUser) { store = null; lsSet(LS.mode, ''); return; }
+      store = await cloudStore(cfg, authUser.uid, 'users');
+    } catch (e) { console.error(e); store = null; lsSet(LS.mode, ''); snack('Could not open your Google account – check the internet connection'); return; }
   } else store = localStore();
   store.start(onData, onStoreErr);
+  if (mode === 'account' && lsGet('exsy.migrateFrom', null)) migrateIntoAccount(lsGet('exsy.migrateFrom', null));
   setTimeout(() => { if (!ready()) { COLLS.forEach(c => loaded.add(c)); scheduleRender(); } }, 9000);
 }
 

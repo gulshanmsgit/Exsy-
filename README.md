@@ -25,6 +25,21 @@ On a phone: browser menu → **Add to Home screen** to install it like an app.
 GitHub → this repo → **Settings → Pages** → Source: **Deploy from a branch** → Branch **main**, folder **/ (root)** → Save.
 After a minute the app is at `https://gulshanmsgit.github.io/Exsy-/`.
 
+## Sign in with Google (recommended)
+
+Each person's money book is stored under their own Google account (`users/{uid}`) and the Firestore rules let only
+that signed-in account read or write it. One-time setup in the Firebase console (project `exsy-591a1`):
+
+1. **Build → Authentication → Get started → Sign-in method → Google → Enable** (choose a support email) → Save.
+2. **Authentication → Settings → Authorized domains → Add domain:** `gulshanmsgit.github.io`
+   (`localhost` is already there for testing).
+3. **Firestore → Rules:** paste the whole [`firestore.rules`](firestore.rules) again → **Publish** (it now has the
+   private `users/{uid}` part as well as the sync-code part).
+
+In the app: **More → Sync & devices → Move to my Google account** (from a sync code) or **Continue with Google**
+(from this-device-only or the start screen). The current data is copied into the account once – only if the account
+is still empty – and the sync code keeps working too. Plan: live sync and Google Drive backup become the paid plan.
+
 ## Turn on sync (Firebase project `exsy-591a1`)
 
 The app already contains the config of the Exsy Firebase project. One-time setup in <https://console.firebase.google.com>:
@@ -141,6 +156,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `budget.js` | Monthly budget, mood emoji, spending trend graphs |
 | `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
+| `account.js` | Google sign-in, sign-out, moving data into the account |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline; `icons/make_icons.py` draws the “Spend ring” logo |
 | `firestore.rules` | Firestore security rules |

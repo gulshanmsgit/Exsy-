@@ -82,7 +82,7 @@ function pageMore() {
     </div>
     <div class="section-head" style="margin-top:16px"><h2>Settings</h2></div>
     <div class="card flush">
-      ${item('#/sync', store.kind === 'cloud' ? 'cloud_done' : 'phone_android', 'Sync & devices', store.kind === 'cloud' ? 'Synced with Firebase – open on phone and laptop' : 'Saved on this device only – turn on sync')}
+      ${item('#/sync', isAccountMode() ? 'account_circle' : store.kind === 'cloud' ? 'cloud_done' : 'phone_android', isAccountMode() ? 'Account & devices' : 'Sync & devices', isAccountMode() ? `Signed in as ${esc(authUser?.email || '')}` : store.kind === 'cloud' ? 'Synced with a sync code – or sign in with Google' : 'Saved on this device only – sign in with Google to sync')}
       ${item('', 'tune', 'Edit Home', 'Show, hide and reorder the cards on Home', 'data-act="editHome"')}
       ${item('', 'menu', 'Bottom bar', `Home · ${navMiddle().map(id => NAV_CHOICES.find(c => c.id === id).label).join(' · ')} · More`, 'data-act="editNav"')}
       ${item('', 'vibration', lsGet('exsy.buzz', true) ? 'Vibration is on' : 'Vibration is off', 'Short buzz when you save, swipe or draw a winner', 'data-act="buzzToggle"')}
@@ -110,7 +110,11 @@ function joinLink() {
   return `${location.origin}${location.pathname}#join=${payload}`;
 }
 function pageSync() {
+  if (isAccountMode()) return { title: 'Account & devices', back: '#/more', body: accountCard(), fab: false };
   const cloud = store.kind === 'cloud', code = lsGet(LS.code, ''), hasCfg = !!(FIREBASE_CONFIG || lsGet(LS.cfg, null));
+  const googleCard = hasCfg ? `<div class="card" style="margin-top:12px"><div class="card-title">${ic('login')}Sign in with Google (recommended)</div>
+      <p class="muted" style="margin-bottom:12px">Your money book becomes private to your Google account – nobody can open it with a code. ${cloud ? 'Everything under this sync code is copied into your account; the code keeps working too.' : 'Your entries on this device are copied into your account.'}</p>
+      ${googleBtn(cloud ? 'Move to my Google account' : 'Continue with Google')}</div>` : '';
   const body = cloud ? `<div class="card primary"><div class="card-title">${ic('cloud_done')}Sync is on</div>
       <p>Everything you add is saved to your Firebase database and shows up on all your devices. Works offline too – changes upload when you are back online.</p></div>
     <div class="card" style="margin-top:12px"><div class="card-title">${ic('link')}Open on another device</div>
@@ -119,7 +123,7 @@ function pageSync() {
       <p class="muted" style="margin-top:12px">${ic('warning', 'sm')} Anyone with this link or code can see your money book. Keep it private.</p></div>
     <div class="card" style="margin-top:12px"><div class="card-title">${ic('phone_android')}Stop syncing on this device</div>
       <p class="muted" style="margin-bottom:12px">Your data stays in the cloud. This device goes back to the start screen.</p>
-      <button class="btn outlined danger" data-act="signOut">Forget sync code on this device</button></div>`
+      <button class="btn outlined danger" data-act="signOut">Forget sync code on this device</button></div>${googleCard}`
     : `<div class="card"><div class="card-title">${ic('phone_android')}Saved on this device only</div>
       <p class="muted">Your entries are in this browser. Turn on sync to use the same money book on your phone and laptop, with an online backup.</p></div>
       <div class="card" style="margin-top:12px"><div class="card-title">${ic('cloud_sync')}Turn on sync</div>
@@ -128,7 +132,7 @@ function pageSync() {
         : `<p class="muted" style="margin-bottom:12px">First connect your Firebase project: Firebase console → Project settings → Your apps → Web app → copy the <b>firebaseConfig</b> block and paste it here.</p>
           <label class="field"><span>Firebase config</span><textarea id="cfg-in" rows="7" placeholder='const firebaseConfig = { apiKey: "…", authDomain: "…", projectId: "…", … };'></textarea></label>
           <div class="btn-row" style="margin-top:12px"><button class="btn filled" data-act="saveCfg">${ic('check')}Save config</button></div>`}
-      </div>`;
+      </div>${googleCard}`;
   return { title: 'Sync & devices', back: '#/more', body, fab: false };
 }
 function parseFirebaseConfig(text) {
@@ -238,6 +242,7 @@ function renderWelcome() {
     <h1>Exsy · Money Book</h1>
     <p class="muted" style="text-align:center;max-width:440px">Your money, your mother’s and father’s money, cash and bank, people who owe you, and your chit business – in one place.</p>
     <div class="welcome">
+      ${hasCfg ? `<div class="card" style="text-align:center">${googleBtn()}<p class="muted" style="margin-top:10px;font-size:13px">Private to your Google account · same money book on all your devices</p></div>` : ''}
       <button class="card choice" data-act="startLocal">${ic('phone_android')}<div><h3>Start on this device</h3><p>Begin right away. You can turn on sync later and everything is copied.</p></div></button>
       ${hasCfg ? `<button class="card choice" data-act="enterCode">${ic('key')}<div><h3>I have a sync code</h3><p>Open the money book you already use on another device.</p></div></button>` : ''}
       <p class="muted" style="text-align:center;font-size:13px">Got a device link? Just open it – you will be signed in automatically.</p>
@@ -526,6 +531,8 @@ const ACT = {
   setupDefaults: () => { setupDefaults(); snack('Your money book is ready – set opening balances in More → Accounts'); go('#/home'); },
   theme: d => { lsSet(LS.theme, d.k); applyTheme(); render(); },
   pin: openPinSetup,
+  googleSignIn: () => googleSignIn(),
+  googleSignOut: () => googleSignOut(),
   startLocal: async () => { lsSet(LS.mode, 'local'); await connect('local'); render(); },
   newCloud: () => confirmSheet({ title: 'Create sync code?', ok: 'Create', text: 'A new private sync code is created and this device’s entries are copied to your Firebase database.', onOk: () => turnOnCloud(randCode(32), true) }),
   enterCode: () => {

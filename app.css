@@ -428,3 +428,10 @@ details.fold .flush-list { margin: 8px -16px -8px; }
 .how { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; }
 .how > span .ms { color: var(--primary); }
 .how p { font-size: 14px; line-height: 20px; }
+
+/* Google sign-in button + account photo */
+.google-btn { background: #fff; color: #1f1f1f; border: 1px solid #747775; height: 44px; padding: 0 20px 0 12px; gap: 12px; font-weight: 500; }
+:root[data-theme="dark"] .google-btn { background: #131314; color: #e3e3e3; border-color: #8e918f; }
+.g-logo { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 15px/1 Arial, sans-serif;
+  color: #fff; background: conic-gradient(#ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0); }
+.acc-photo { width: 48px; height: 48px; border-radius: 50%; flex: none; }
