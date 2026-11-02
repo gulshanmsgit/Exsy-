@@ -11,18 +11,18 @@ F_BLACK, F_BOLD, F_SEMI = (r'C:\Windows\Fonts\seguibl.ttf', r'C:\Windows\Fonts\s
 GREEN_A, GREEN_B = (0, 120, 86), (2, 44, 34)
 MINT, GOLD, WHITE = (137, 248, 199), (255, 214, 102), (255, 255, 255)
 
-SCENES = [  # screenshot, caption line 1, line 2 (highlight), transition into this scene
-    ('01-home.jpg', 'Know where every', 'rupee is', 'zoom'),
-    ('02-paste-sms.jpg', 'Paste a bank SMS…', 'it fills itself', 'whip'),
-    ('03-what-this-means.jpg', 'Every entry,', 'explained simply', 'slide'),
-    ('04-chit-draw.jpg', 'Run your chit fund.', 'Fair random draw', 'circle'),
+SCENES = [  # screenshot, caption line 1 (the problem), line 2 (Exsy's answer, highlighted), transition into this scene
+    ('07-emi.jpg', 'EMIs: interest + GST?', 'Exsy handles it', 'zoom'),
+    ('04-chit-draw.jpg', 'Chits in a notebook?', 'Fair draw on your phone', 'circle'),
     ('05-chit-grid.jpg', "Who paid? Who's late?", 'One glance', 'whip'),
-    ('06-whatsapp-statement.jpg', 'Remind on WhatsApp', 'with a PDF statement', 'zoom'),
-    ('07-emi.jpg', 'The TRUE cost', 'of your EMI', 'slide'),
-    ('08-budget-panic.jpg', 'Overspending?', 'Exsy panics for you', 'circle'),
-    ('09-trend.jpg', 'Watch the trend', 'month by month', 'whip'),
-    ('10-mothers-money.jpg', 'Family money,', 'finally sorted', 'zoom'),
-    ('11-collection-day.jpg', 'Collection day,', 'made easy', 'slide'),
+    ('11-collection-day.jpg', 'Collection day stress?', 'Who to visit, sorted', 'slide'),
+    ('06-whatsapp-statement.jpg', 'Chasing people for money?', 'Remind with a PDF', 'zoom'),
+    ('02-paste-sms.jpg', 'Typing every expense?', 'Paste the SMS instead', 'whip'),
+    ('03-what-this-means.jpg', 'Confusing entries?', 'Explained simply', 'slide'),
+    ('01-home.jpg', 'Where is all the money?', 'One place, whole family', 'circle'),
+    ('08-budget-panic.jpg', 'Overspending?', 'Exsy warns you', 'zoom'),
+    ('09-trend.jpg', 'Spending creeping up?', 'See the trend', 'whip'),
+    ('10-mothers-money.jpg', 'Whose money is whose?', 'Finally sorted', 'slide'),
 ]
 INTRO, HOLD, TRANS, OUTRO = 2.4, 2.35, 0.45, 3.4
 # timing.json (written by build_audio.py) stretches each part to fit its voice-over line
@@ -99,6 +99,8 @@ def caption_layer(line1, line2, t):
     for i, (txt, f, col, y) in enumerate(((line1, F1, WHITE, 92), (line2, F2, MINT, 196))):
         p = ease_out(clamp01((t - 0.10 - i * 0.12) / 0.38))
         if p <= 0: continue
+        size = f.size                                # shrink long lines so they fit inside the frame
+        while d.textlength(txt, font=f) > W - 140 and size > 40: size -= 2; f = font(f.path, size)
         tw = d.textlength(txt, font=f); x = (W - tw) / 2
         tmp = Image.new('RGBA', layer.size, (0, 0, 0, 0)); td = ImageDraw.Draw(tmp)
         if i == 1:                               # highlight pill behind the key words
