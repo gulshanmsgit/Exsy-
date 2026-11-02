@@ -88,7 +88,7 @@ function renderEntry(f) {
   form.onsubmit = e => { e.preventDefault(); submitEntry(f, form, false); };
   const more = s.querySelector('#ef-more'); if (more) more.onclick = () => submitEntry(f, form, true);
   const del = s.querySelector('#ef-del');
-  if (del) del.onclick = () => { closeSheet(); removeMany([['txns', f.id]], 'Entry deleted'); };
+  if (del) del.onclick = () => { closeSheet(); removeMany(txnWithLinked(f.id), 'Entry deleted'); };
   if (!editing && !f.amount) setTimeout(() => amt.focus(), 80);
 }
 
@@ -138,7 +138,7 @@ function submitEntry(f, form, again) {
     const r = D.recurring.find(r => r.id === f.recurringId);
     if (r) save('recurring', { ...r, lastDone: doc.date.slice(0, 7) });
   }
-  save('txns', doc);
+  syncAutoBack(save('txns', doc));
   lsSet(LS.last, { accountId: doc.accountId, forWhom: doc.forWhom || lsGet(LS.last, {}).forWhom });
   if (v.asQuick) addQuick(doc);
   buzz();

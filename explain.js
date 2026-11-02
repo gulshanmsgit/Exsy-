@@ -48,7 +48,8 @@ function meaningOf(v, orig) {
         if (aObj?.bookId === homePayer()) lines.push(`${mom} paid this from her own money – nothing changes between you and ${mom}.`);
         else if (claimApplies(v.accountId, v.forWhom)) {
           const L = motherLedger(), wasClaim = orig && isHomeClaim(orig) ? num(orig.amount) : 0;
-          if (v.homeClaim) { const before = L.balance + wasClaim, after = before - amt; lines.push(`Taken from ${mom}’s money: ${before >= 0 ? 'with you' : `${mom} owes you`} ${inr(Math.abs(before))} → ${after >= 0 ? 'with you' : `${mom} owes you`} ${inr(Math.abs(after))}.`); }
+          if (v.homeClaim && autoBackApplies({ ...v, type: 'expense' })) { const c = autoBackCfg(); lines.push(`${mom} pays it back right away: ${A} from ${accPhrase(c.from)} → ${accPhrase(c.to)}.`); }
+          else if (v.homeClaim) { const before = L.balance + wasClaim, after = before - amt; lines.push(`Taken from ${mom}’s money: ${before >= 0 ? 'with you' : `${mom} owes you`} ${inr(Math.abs(before))} → ${after >= 0 ? 'with you' : `${mom} owes you`} ${inr(Math.abs(after))}.`); }
           else lines.push(`Not taken from ${mom}’s money – this one is yours.`);
         }
       }

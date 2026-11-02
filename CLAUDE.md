@@ -47,6 +47,10 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - Home = `HOME_CARDS` rendered in the order/visibility from localStorage `exsy.homeLayout` (Edit Home, per device).
 - `inr()` shows whole rupees; `inrP()`/`inrAbsP()` keep paise (entry rows, EMI schedule). Colour tokens: --pos in,
   --neg out, --owe owed. Budget scope defaults to the Me book. Logo/icons: `python icons/make_icons.py`.
+- Auto pay-back (home.js): online home bill (claim, account not cash, mode not Cash) → transfer with fixed id
+  `auto_{expenseId}` Mother's bank → my ICICI (`prefs/home.autoBack`); `syncAutoBack` after every save, `txnWithLinked`
+  for deletes. Bottom bar: `navMiddle()` from localStorage `exsy.nav` (3 of `NAV_CHOICES`), `activeTab()` for highlights.
+- Logo = "Spend ring" (owner's choice, Nov 2026).
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -56,6 +60,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.11: Spend ring logo, customizable bottom bar, automatic pay-back of online home bills, simpler Mother's page.
 - v1.10: new logo, Edit Home, whole rupees, owed colour, budget defaults to Me.
 - v1.9: budgets + mood emoji + trend graphs on Home, EMI PDF/share, person statement options.
 - v1.8: calc keys, pay-for-a-person + New person, card due entry fix, gift/loan edit fixes, EMI copy fix.

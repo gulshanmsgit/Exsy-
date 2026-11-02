@@ -417,3 +417,14 @@ svg.trend { width: 100%; height: auto; display: block; }
   .home-grid { columns: 2; column-gap: 12px; }
   .home-cell { break-inside: avoid; display: inline-block; width: 100%; margin: 0 0 12px !important; }
 }
+/* Collapsible sections (Mother's money) and "How it works" rows */
+details.fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 16px; font-weight: 500; min-height: 32px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary > span:not(.ms) { flex: 1; }
+details.fold > summary small { color: var(--on-surface-variant); font-weight: 400; font-size: 13px; }
+details.fold > summary::after { content: '▾'; color: var(--on-surface-variant); transition: transform .2s; }
+details.fold[open] > summary::after { transform: rotate(180deg); }
+details.fold .flush-list { margin: 8px -16px -8px; }
+.how { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; }
+.how > span .ms { color: var(--primary); }
+.how p { font-size: 14px; line-height: 20px; }

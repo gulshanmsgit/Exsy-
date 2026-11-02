@@ -84,6 +84,7 @@ function pageMore() {
     <div class="card flush">
       ${item('#/sync', store.kind === 'cloud' ? 'cloud_done' : 'phone_android', 'Sync & devices', store.kind === 'cloud' ? 'Synced with Firebase – open on phone and laptop' : 'Saved on this device only – turn on sync')}
       ${item('', 'tune', 'Edit Home', 'Show, hide and reorder the cards on Home', 'data-act="editHome"')}
+      ${item('', 'menu', 'Bottom bar', `Home · ${navMiddle().map(id => NAV_CHOICES.find(c => c.id === id).label).join(' · ')} · More`, 'data-act="editNav"')}
       ${item('', 'vibration', lsGet('exsy.buzz', true) ? 'Vibration is on' : 'Vibration is off', 'Short buzz when you save, swipe or draw a winner', 'data-act="buzzToggle"')}
       ${item('', privacyOn() ? 'visibility_off' : 'visibility', privacyOn() ? 'Amounts are hidden' : 'Hide amounts', 'Blur all money figures – also the eye icon at the top', 'data-act="privacy"')}
       ${item('', hasPin ? 'lock' : 'lock_open', hasPin ? 'App lock is on' : 'App lock (PIN)', hasPin ? 'Tap to change or remove the PIN' : 'Ask for a 4-digit PIN when the app opens', 'data-act="pin"')}
@@ -447,6 +448,7 @@ const ACT = {
   editEmi: d => openEmiForm(d.id),
   shareEmi: d => shareEmi(d.id),
   editHome: () => openHomeEdit(),
+  editNav: () => openNavEdit(),
   budSave: () => { const v = evalAmount($('#bud-total').value); saveBudgetPrefs({ total: v > 0 ? v : 0 }); buzz(); snack(v > 0 ? `Monthly budget ${inr(v)}` : 'Monthly budget removed'); },
   budScope: d => saveBudgetPrefs({ scope: d.b }),
   budCat: d => openCatBudget(d.id),
@@ -592,3 +594,27 @@ document.addEventListener('visibilitychange', () => {
   render();
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
+
+/* ---------- More → Bottom bar: choose the 3 tabs between Home and More ---------- */
+function openNavEdit() {
+  const cur = navMiddle();
+  const list = [...cur.map(id => NAV_CHOICES.find(c => c.id === id)), ...NAV_CHOICES.filter(c => !cur.includes(c.id))];
+  const s = openSheet(`${sheetHead('Bottom bar')}
+    <p class="lead">Pick ${NAV_MAX} tabs to show between <b>Home</b> and <b>More</b>, in this order. Everything else stays in More.</p>
+    <div class="card flush" style="margin-top:12px">${list.map(c => {
+      const i = cur.indexOf(c.id);
+      return `<div class="li static"><span class="avatar">${ic(c.icon)}</span><span class="li-text"><span class="li-title">${c.label}</span><span class="li-sub">${i >= 0 ? `Tab ${i + 2} of 5` : 'In More'}</span></span>
+        ${i > 0 ? `<button class="icon-btn" data-nup="${c.id}" aria-label="Move left">${ic('arrow_upward')}</button>` : ''}
+        <label class="switch-row" style="padding:0 4px"><input type="checkbox" data-nshow="${c.id}" ${i >= 0 ? 'checked' : ''} aria-label="Show ${c.label}"></label></div>`;
+    }).join('')}</div>
+    <div class="sheet-actions"><button class="btn text" id="ne-reset">${ic('restart_alt')}Default</button><button class="btn filled" data-act="closeSheet">${ic('check')}Done</button></div>`);
+  const keep = ids => { lsSet('exsy.nav', ids); scheduleRender(); openNavEdit(); };
+  $$('[data-nshow]', s).forEach(cb => cb.onchange = () => {
+    const ids = navMiddle().slice(), id = cb.dataset.nshow;
+    if (cb.checked) { if (ids.length >= NAV_MAX) { cb.checked = false; snack(`Only ${NAV_MAX} fit – switch one off first`); return; } ids.push(id); }
+    else { if (ids.length <= 1) { cb.checked = true; snack('Keep at least one'); return; } ids.splice(ids.indexOf(id), 1); }
+    keep(ids);
+  });
+  $$('[data-nup]', s).forEach(b => b.onclick = () => { const ids = navMiddle().slice(), i = ids.indexOf(b.dataset.nup); [ids[i - 1], ids[i]] = [ids[i], ids[i - 1]]; keep(ids); });
+  s.querySelector('#ne-reset').onclick = () => keep(NAV_DEFAULT.slice());
+}

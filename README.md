@@ -58,6 +58,9 @@ One number on **More → Mother's money** (also shown on Home): how much of Moth
 - **+ her monthly money:** set the amount and the first month once (e.g. ₹5,000 from Sep 2026, given on the 1st of
   the next month – paid in October = September's money). Saving again replaces the setting. Added automatically each
   month – the money can stay in your account, no entry needed.
+- **Online home bills are paid back automatically:** pay a home bill online (e.g. from Canara) and Exsy adds
+  Mother's bank → your ICICI (salary) for the same amount, so her money with you does not change. Change the accounts
+  or switch it off under *Automatic pay-back*. Cash home bills come out of her money with you.
 - **− home costs you pay:** add an Expense with **For whom: Home** from your own account; the switch
   **“Take it from Mother's money”** (right under *For whom*) is on. Switch it off for the few that are yours.
 - **− money you give her / + money she gives you:** the two buttons on the page (or any transfer between your
@@ -93,6 +96,7 @@ see your name in these sentences.
 ## Everyday shortcuts
 
 - **Edit Home** (bottom of Home, or More): show, hide and reorder the Home cards – saved per device.
+- **Bottom bar** (More): choose the 3 tabs between Home and More – e.g. EMIs, Budget, Mother, Calendar.
 - Summaries show whole rupees (₹3,21,217); single entries and EMI bills keep the paise. Colours: green = money in,
   red = money out, orange = money owed.
 
@@ -138,7 +142,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
-| `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline; `icons/make_icons.py` draws the logo |
+| `sw.js`, `manifest.webmanifest`, `icons/` | Installable app + offline; `icons/make_icons.py` draws the “Spend ring” logo |
 | `firestore.rules` | Firestore security rules |
 
 Run locally: `python -m http.server 8642` in this folder, then open <http://127.0.0.1:8642>.

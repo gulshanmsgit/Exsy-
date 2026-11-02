@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.10.0';
+const APP_VERSION = '1.11.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -308,13 +308,26 @@ const scheduleRender = () => {
   requestAnimationFrame(run); setTimeout(run, 150);
 };
 
-const NAV = [
-  { id: 'home', label: 'Home', icon: 'home' },
-  { id: 'txns', label: 'Entries', icon: 'receipt_long' },
-  { id: 'chits', label: 'Chits', icon: 'groups' },
-  { id: 'people', label: 'People', icon: 'handshake' },
-  { id: 'more', label: 'More', icon: 'menu' }
+// Bottom bar: Home and More are fixed; the 3 in between are chosen in More → Bottom bar (saved per device)
+const NAV_CHOICES = [
+  { id: 'txns', label: 'Entries', icon: 'receipt_long' }, { id: 'chits', label: 'Chits', icon: 'groups' },
+  { id: 'people', label: 'People', icon: 'handshake' }, { id: 'emis', label: 'EMIs', icon: 'credit_card' },
+  { id: 'budgets', label: 'Budget', icon: 'savings' }, { id: 'mother', label: 'Mother', icon: 'house' },
+  { id: 'calendar', label: 'Calendar', icon: 'calendar_month' }, { id: 'reports', label: 'Reports', icon: 'bar_chart' },
+  { id: 'accounts', label: 'Accounts', icon: 'account_balance' }, { id: 'collect', label: 'Collect', icon: 'event_available' }
 ];
+const NAV_DEFAULT = ['txns', 'chits', 'people'], NAV_MAX = 3;
+function navMiddle() {
+  const ids = (lsGet('exsy.nav', null) || NAV_DEFAULT).filter(id => NAV_CHOICES.some(c => c.id === id)).slice(0, NAV_MAX);
+  return ids.length ? ids : NAV_DEFAULT;
+}
+const navItems = () => [{ id: 'home', label: 'Home', icon: 'home' }, ...navMiddle().map(id => NAV_CHOICES.find(c => c.id === id)), { id: 'more', label: 'More', icon: 'menu' }];
+// detail pages light up the tab they belong to, when that tab is in the bar
+const NAV_PARENT = { chit: 'chits', person: 'people', account: 'accounts', emi: 'emis', homecosts: 'mother', collect: 'chits', calendar: 'txns', budgets: 'home' };
+function activeTab(p) {
+  const ids = navItems().map(n => n.id);
+  return [p, NAV_PARENT[p], NAV_OF[p]].find(id => id && ids.includes(id)) || 'more';
+}
 const NAV_OF = { chit: 'chits', person: 'people', accounts: 'more', account: 'more', reports: 'more', cats: 'more', recurring: 'more', sync: 'more', calendar: 'txns', collect: 'chits', homecosts: 'more', mother: 'more', emis: 'more', emi: 'more', budgets: 'home' };
 function route() {
   const [p, a] = location.hash.replace(/^#\/?/, '').split('/');
@@ -337,7 +350,7 @@ function render() {
   let pg;
   try { pg = PAGES[p](a); }
   catch (e) { console.error(e); pg = { title: 'Oops', body: `<div class="banner">${ic('error')}<div>Something went wrong showing this page: ${esc(e.message)}</div></div>` }; }
-  app.innerHTML = shell(pg, NAV_OF[p] || p);
+  app.innerHTML = shell(pg, activeTab(p));
   if (pendingShare) setTimeout(handleShare, 60);
   setTimeout(emiTick, 0);   // adds EMI bills whose date has come
   if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch { /* not a text input */ } } }
@@ -345,7 +358,7 @@ function render() {
 }
 
 function shell(pg, active) {
-  const nav = NAV.map(n => `<a class="nav-item ${n.id === active ? 'on' : ''}" href="#/${n.id}"><span class="pill">${ic(n.icon)}</span><span>${n.label}</span></a>`).join('');
+  const nav = navItems().map(n => `<a class="nav-item ${n.id === active ? 'on' : ''}" href="#/${n.id}"><span class="pill">${ic(n.icon)}</span><span>${n.label}</span></a>`).join('');
   const sync = (store.kind === 'cloud'
     ? `<a class="icon-btn hide-sm" href="#/sync" title="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}">${ic(navigator.onLine ? 'cloud_done' : 'cloud_off')}</a>`
     : `<a class="icon-btn hide-sm" href="#/sync" title="Saved on this device only">${ic('phone_android')}</a>`)

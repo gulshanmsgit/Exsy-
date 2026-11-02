@@ -80,55 +80,97 @@ function balanceText(L, name) {
     : { label: `${name} owes you`, sub: `Home costs you paid are more than ${name}’s money` };
 }
 function pageMother() {
-  const x = X(), L = motherLedger(), name = payerName(), p = homePrefs();
+  const x = X(), L = motherLedger(), name = payerName();
   if (!L.mom) return { title: 'Mother’s money', back: '#/more', fab: false, body: `<div class="card"><p>Choose whose money pays for the home:</p>${payerChips(null)}</div>` };
   const bt = balanceText(L, name), k = thisMonth(), m = L.months.get(k) || { salary: 0, salaryFor: [], home: 0, given: 0, got: 0 };
-  const plan = monthlyPlan(), shortMon = w => MON[+w.slice(5, 7) - 1];
+  const plan = monthlyPlan(), shortMon = w => MON[+w.slice(5, 7) - 1], ab = autoBackCfg();
   const stmt = [...L.months].sort((a, b) => b[0].localeCompare(a[0]));
   let run = L.balance;
   const stmtRows = stmt.map(([mk, r]) => { const end = run; run = round2(run - (r.salary - r.home - r.given + r.got)); return { mk, r, end }; });
   const homeMonth = D.txns.filter(t => t.type === 'expense' && t.forWhom === 'home' && t.date.startsWith(k));
+  const accOpts = (book, sel, name_) => accChips(name_, sel, a => a.bookId === book && a.type !== 'card' && a.type !== 'invest');
   const body = `<div class="card primary">
       <div class="hero-label">${bt.label}</div><div class="hero-num">${inrAbs(L.balance)}</div>
       <div class="hero-label" style="margin-bottom:12px">${bt.sub}</div>
       <div class="btn-row"><button class="btn filled" data-act="motherMove" data-dir="give">${ic('north_east')}Gave to ${esc(name)}</button>
         <button class="btn tonal" data-act="motherMove" data-dir="get">${ic('south_west')}${esc(name)} gave me</button></div></div>
 
-    <div class="card" style="margin-top:12px"><div class="card-title">${ic('today')}This month · ${fmtMonth(k)}</div>
-      <div class="kv"><span>+ Monthly money${m.salaryFor.length ? ` (${m.salaryFor.map(shortMon).join(', ')} money)` : ''}</span><b class="pos">${m.salary ? inr(m.salary) : L.next ? `${inr(L.next.amount)} on ${fmtDay(L.next.date)}` : 'not set'}</b></div>
-      <div class="kv"><span>− Home costs you paid</span><b>${inr(m.home)}</b></div>
-      <div class="kv"><span>− Given to ${esc(name)}</span><b>${inr(m.given)}</b></div>
-      ${m.got ? `<div class="kv"><span>+ ${esc(name)} gave you</span><b class="pos">${inr(m.got)}</b></div>` : ''}
-    </div>
+    <div class="card" style="margin-top:12px"><div class="card-title">${ic('info')}How it works</div>
+      <div class="how"><span>${ic('account_balance')}</span><p><b>Home bill paid online</b> from your account → ${ab.on ? `${esc(name)} pays it back <b>automatically</b>: ${esc(accLabel(ab.from, x))} → ${esc(accLabel(ab.to, x))}.` : `taken from ${esc(name)}’s money with you (automatic pay-back is off).`}</p></div>
+      <div class="how"><span>${ic('payments')}</span><p><b>Home bill paid in cash</b> → taken from ${esc(name)}’s money that you keep.</p></div>
+      <div class="how"><span>${ic('event_repeat')}</span><p><b>Her monthly money</b> → ${plan ? `${inr(plan.amount)} added on the ${ordinal(payDay())}${paidNextMonth() ? ' (for the month before)' : ''}.` : 'not set yet – set it below.'}</p></div></div>
 
-    <div class="card" style="margin-top:12px"><div class="card-title">${ic('payments')}${esc(name)}’s monthly money</div>
-      ${plan ? `<div class="banner info" style="margin-bottom:12px">${ic('info')}<div><b>${inr(plan.amount)}</b> for every month from <b>${fmtMonth(plan.from)}</b>, given on the ${ordinal(payDay())}${paidNextMonth() ? ' of the next month' : ''}.
-        ${L.next ? `<br>Next: ${shortMon(L.next.work)} money on ${fmtDate(L.next.date)}.` : ''}</div></div>`
-        : `<p class="muted" style="margin-bottom:12px">The fixed amount you give ${esc(name)} each month. It is added here automatically – no entry needed, the money can stay in your account.</p>`}
-      <div class="grid3">
+    <div class="card" style="margin-top:12px"><div class="card-title">${ic('today')}This month · ${fmtMonth(k)}</div>
+      <div class="kv"><span>+ Monthly money${m.salaryFor.length ? ` (${m.salaryFor.map(shortMon).join(', ')})` : ''}</span><b class="pos">${m.salary ? inr(m.salary) : L.next ? `${inr(L.next.amount)} on ${fmtDay(L.next.date)}` : '—'}</b></div>
+      <div class="kv"><span>− Home costs you paid</span><b class="neg">${inr(m.home)}</b></div>
+      <div class="kv"><span>+ Paid back / given by ${esc(name)}</span><b class="pos">${inr(m.got)}</b></div>
+      <div class="kv"><span>− Given to ${esc(name)}</span><b class="neg">${inr(m.given)}</b></div></div>
+
+    <details class="card fold" style="margin-top:12px" ${plan ? '' : 'open'}><summary>${ic('payments')}<span>${esc(name)}’s monthly money</span><small>${plan ? `${inr(plan.amount)} a month` : 'not set'}</small></summary>
+      <div class="grid3" style="margin-top:12px">
         ${field('Amount each month', `<input id="mo-amt" inputmode="decimal" value="${plan ? plan.amount : ''}" placeholder="e.g. 5000">`)}
         ${field('First month of money', `<input id="mo-from" type="month" value="${esc(plan ? plan.from : addMonths(k, -1))}">`)}
         ${field('Given on day', `<input id="mo-day" type="number" min="1" max="28" value="${payDay()}">`)}
       </div>
-      <label class="switch-row" style="margin-top:8px"><span>Given the next month <small class="muted" style="display:block">e.g. paid in October = September’s money</small></span><input type="checkbox" id="mo-next" ${paidNextMonth() ? 'checked' : ''}></label>
+      <label class="switch-row" style="margin-top:8px"><span>Given the next month <small class="muted" style="display:block">paid in October = September’s money</small></span><input type="checkbox" id="mo-next" ${paidNextMonth() ? 'checked' : ''}></label>
       <div class="btn-row" style="margin-top:8px"><button class="btn filled" data-act="motherSalary">${ic('check')}Save</button>
-        ${plan ? `<button class="btn text danger" data-act="motherSalaryOff">Stop monthly money</button>` : ''}</div>
-    </div>
+        ${plan ? `<button class="btn text danger" data-act="motherSalaryOff">Stop monthly money</button>` : ''}</div></details>
 
-    ${stmtRows.length ? `<div class="section-head" style="margin-top:12px"><h2>Month by month</h2></div>
-    <div class="card flush">${stmtRows.map(({ mk, r, end }) => `<div class="li static"><span class="li-text"><span class="li-title">${fmtMonth(mk)}</span>
-      <span class="li-sub" style="white-space:normal">${[r.salary && `+${inr(r.salary)} ${r.salaryFor.map(shortMon).join(', ')} money`, r.home && `−${inr(r.home)} home`, r.given && `−${inr(r.given)} given`, r.got && `+${inr(r.got)} from ${esc(name)}`].filter(Boolean).join(' · ')}</span></span>
-      <span class="li-end"><small>${end >= 0 ? 'with you' : 'owes you'}</small>${inrAbs(end)}</span></div>`).join('')}</div>` : ''}
+    <details class="card fold" style="margin-top:12px"><summary>${ic('sync')}<span>Automatic pay-back</span><small>${ab.on ? 'On' : 'Off'}</small></summary>
+      <form id="ab-form" onsubmit="return false">
+        <label class="switch-row" style="margin-top:8px"><span>When I pay a home bill online, ${esc(name)} pays it back right away</span><input type="checkbox" name="on" ${ab.on ? 'checked' : ''}></label>
+        <div class="form-label">From ${esc(name)}’s</div>${accOpts(L.mom, ab.from, 'from')}
+        <div class="form-label">Into my</div>${accOpts(meBook()?.id, ab.to, 'to')}
+        <p class="muted" style="margin-top:8px">Cash home bills are not paid back automatically – they come out of ${esc(name)}’s money with you.</p></form></details>
 
-    <div class="section-head" style="margin-top:12px"><h2>Home costs · ${fmtMonth(k)}</h2><span class="muted">${inr(sum(homeMonth, t => t.amount))}</span></div>
-    <div class="card flush">${txList(homeMonth, x, { empty: 'Add an expense with “For whom: Home”' })}</div>
+    ${stmtRows.length ? `<details class="card fold" style="margin-top:12px"><summary>${ic('calendar_month')}<span>Month by month</span><small>${stmtRows.length} month${stmtRows.length > 1 ? 's' : ''}</small></summary>
+      <div class="flush-list">${stmtRows.map(({ mk, r, end }) => `<div class="li static"><span class="li-text"><span class="li-title">${fmtMonth(mk)}</span>
+        <span class="li-sub" style="white-space:normal">${[r.salary && `+${inr(r.salary)} ${r.salaryFor.map(shortMon).join(', ')} money`, r.home && `−${inr(r.home)} home`, r.got && `+${inr(r.got)} paid back`, r.given && `−${inr(r.given)} given`].filter(Boolean).join(' · ') || 'nothing'}</span></span>
+        <span class="li-end"><small>${end >= 0 ? 'with you' : 'owes you'}</small>${inrAbs(end)}</span></div>`).join('')}</div></details>` : ''}
 
-    <div class="section-head" style="margin-top:12px"><h2>Settings</h2></div>
-    <div class="card"><div class="form-label" style="margin-top:0">Whose money pays for the home</div>${payerChips(L.mom)}
+    <details class="card fold" style="margin-top:12px"><summary>${ic('house')}<span>Home costs · ${fmtMonth(k)}</span><small>${inr(sum(homeMonth, t => t.amount))}</small></summary>
+      <div class="flush-list">${txList(homeMonth, x, { empty: 'Add an expense with “For whom: Home”' })}</div></details>
+
+    <details class="card fold" style="margin-top:12px"><summary>${ic('settings')}<span>Settings</span><small></small></summary>
+      <div class="form-label">Whose money pays for the home</div>${payerChips(L.mom)}
       <label class="field" style="margin-top:12px;max-width:260px"><span>Count from</span><input type="date" id="home-since" value="${esc(homeSince())}"></label>
-      <p class="muted" style="margin:4px 4px 0">Entries before this date are left out (already settled).</p></div>`;
+      <p class="muted" style="margin:4px 4px 0">Entries before this date are left out (already settled).</p></details>`;
   return { title: `${name}’s money`, back: '#/more', body, fabAct: 'addHomeExpense', fabLabel: 'Home expense' };
 }
+
+/* ---------- automatic pay-back of online home bills: Mother's bank → my salary account ---------- */
+function autoBackCfg() {
+  const p = homePrefs().autoBack || {}, mom = homePayer(), me = meBook()?.id;
+  const ok = (id, book) => D.accounts.some(a => a.id === id && a.bookId === book && !a.archived);
+  const from = ok(p.from, mom) ? p.from : (D.accounts.find(a => a.bookId === mom && a.type === 'bank' && !a.archived) || {}).id;
+  const to = ok(p.to, me) ? p.to : (D.accounts.find(a => a.bookId === me && /icici|salary/i.test(a.name) && !a.archived)
+    || D.accounts.find(a => a.bookId === me && a.type === 'bank' && !a.archived) || {}).id;
+  return { on: p.on !== false && !!mom && !!from && !!to, from, to };
+}
+const autoBackId = expenseId => 'auto_' + expenseId;
+// online (not cash) home bill paid from my money and taken from Mother's money
+function autoBackApplies(t) {
+  const c = autoBackCfg(), acc = X().acc.get(t.accountId);
+  return c.on && t.type === 'expense' && t.homeClaim !== false && claimApplies(t.accountId, t.forWhom) && acc?.type !== 'cash' && t.mode !== 'Cash';
+}
+// keep the pay-back transfer in step with its home bill (added, changed or removed)
+function syncAutoBack(t) {
+  const id = autoBackId(t.id), old = D.txns.find(x => x.id === id);
+  if (autoBackApplies(t)) {
+    const c = autoBackCfg();
+    save('txns', { id, createdAt: old?.createdAt, type: 'transfer', amount: num(t.amount), date: t.date, accountId: c.from, toAccountId: c.to, mode: 'Bank transfer',
+      note: `${payerName()} paid back · ${X().cat.get(t.categoryId)?.name || 'home bill'}`, autoBackFor: t.id });
+  } else if (old) removeDoc('txns', id);
+}
+// delete a bill together with its automatic pay-back (one Undo for both)
+const txnWithLinked = id => [['txns', id], ...(D.txns.some(t => t.id === autoBackId(id)) ? [['txns', autoBackId(id)]] : [])];
+app.addEventListener('change', e => {
+  const f = e.target.closest('#ab-form'); if (!f) return;
+  const v = readForm(f);
+  saveHomePrefs({ autoBack: { on: !!v.on, from: v.from || '', to: v.to || '' } });
+  snack(v.on ? 'Automatic pay-back is on' : 'Automatic pay-back is off');
+});
+
 function payerChips(cur) {
   return `<div class="chips">${booksSorted().filter(b => !b.primary).map(b => `<button class="chip ${cur === b.id ? 'on' : ''}" data-act="homePayer" data-b="${b.id}">${cur === b.id ? ic('check') : ''}${esc(b.name)}</button>`).join('')}
     <button class="chip ${!cur ? 'on' : ''}" data-act="homePayer" data-b="">${!cur ? ic('check') : ''}Nobody – just track home costs</button></div>`;

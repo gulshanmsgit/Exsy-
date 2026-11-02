@@ -89,7 +89,7 @@ function duplicateTxn(id) {
     r.classList.remove('swiping', 'armed', 'to-del');
     if (!was) return;
     suppressClick = true; setTimeout(() => { suppressClick = false; }, 80);
-    if (Math.abs(d) > 96) { buzz(20); if (d < 0) removeMany([['txns', r.dataset.id]], 'Entry deleted'); else duplicateTxn(r.dataset.id); }
+    if (Math.abs(d) > 96) { buzz(20); if (d < 0) removeMany(txnWithLinked(r.dataset.id), 'Entry deleted'); else duplicateTxn(r.dataset.id); }
   };
   document.addEventListener('pointerup', end);
   document.addEventListener('pointercancel', end);
@@ -127,6 +127,7 @@ function useQuick(i) {
   const okAcc = D.accounts.some(a => a.id === f.accountId && !a.archived) && (f.type !== 'transfer' || D.accounts.some(a => a.id === f.toAccountId));
   if (!f.amount || !okAcc || (PERSON_T.has(f.type) && !D.people.some(p => p.id === f.personId))) { openEntry({ ...f, amount: f.amount ? String(f.amount) : '' }); return; }
   const t = save('txns', { ...f, date: today() });
+  syncAutoBack(t);
   buzz();
   snack(`Saved ${label} ${inr(f.amount)}`, { label: 'Undo', fn: () => removeDoc('txns', t.id) });
 }
