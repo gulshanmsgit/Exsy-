@@ -381,3 +381,29 @@ body { overscroll-behavior-y: contain; }
 .calc-keys button[data-k="="] { background: var(--secondary-container); color: var(--on-secondary-container); }
 .calc-keys button[data-k="C"] { font-size: 15px; color: var(--error); }
 .calc-keys button:active { transform: scale(.94); }
+/* Budget mood card + trend graph */
+.mood, .mood-empty { display: flex !important; align-items: center; gap: 14px; color: inherit; }
+.mood-empty { color: var(--on-surface-variant); font-size: 14px; }
+.mood-empty > span { flex: 1; }
+.mood-emoji { font-size: 44px; line-height: 1; flex: none; }
+.mood-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.mood-text b { font-size: 17px; font-weight: 500; }
+.mood-text small { font-size: 12px; color: var(--on-surface-variant); }
+.mood-ok { background: color-mix(in srgb, var(--pos) 14%, var(--sc-low)); }
+.mood-warn { background: var(--warn-container); color: var(--on-warn-container); }
+.mood-warn .progress i { background: #c8742a; }
+.mood-bad { background: var(--error-container); color: var(--on-error-container); }
+.mood-bad .progress i { background: var(--error); }
+.mood-bad .mood-emoji { animation: panic 1.2s ease-in-out infinite; }
+@keyframes panic { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-12deg) scale(1.08); } 40% { transform: rotate(10deg); } 60% { transform: rotate(-6deg) scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .mood-bad .mood-emoji { animation: none; } }
+svg.trend { width: 100%; height: auto; display: block; }
+.trend .t-cur { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linejoin: round; }
+.trend .t-prev { fill: none; stroke: var(--outline); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.trend .t-budget { stroke: var(--error); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.trend .t-dot { fill: var(--primary); }
+.trend .t-lbl { font-size: 10px; fill: var(--on-surface-variant); }
+.trend .t-strong { font-weight: 700; fill: var(--on-surface); }
+.trend .t-bar { fill: color-mix(in srgb, var(--primary) 45%, var(--sc-highest)); }
+.trend .t-now { fill: var(--primary); }
+.trend .t-over { fill: var(--error); }

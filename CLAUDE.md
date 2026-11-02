@@ -39,6 +39,11 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
 - `addCalcKeys` (app.js, run by `openSheet`) puts + − × ÷ = ⌫ C under every `.amount-field`; `evalAmount` accepts × ÷ −.
 - Expense "For whom" can be a person (`p:<id>` / `p:__new`): payBack on → saved as type lend (keeps category/shop);
   off → expense with forWhom `p:<id>`. Card opening is entered as the positive amount due, stored negative.
+- `budget.js`: `prefs/budget` {total, scope, cats}; `spendIn(k,{scope,catId})` excludes Balance correction; `mood()`
+  picks the emoji from % used vs % of month gone. `trendCard()` = SVG (month cumulative vs last month + budget pace /
+  6 or 12 month bars), modes `UI.trendMode`, filter `UI.trendCat`.
+- `openShareSheet` accepts `controls` (HTML in #sh-opts; `data-show-when="name=value"` toggles) + `build(opts)` +
+  `messageFor(opts)`; used by person statements (what: all/taken, when: all/month/custom).
 - NEVER add Co-Authored-By / AI attribution to commits (owner's explicit rule, 6 Oct 2026).
 - Bump `CACHE` in `sw.js` when shipping changes.
 
@@ -48,6 +53,7 @@ Repo: https://github.com/gulshanmsgit/Exsy- (push to `main` directly). Hosted on
   to" on chit payments/payouts; ExamSim's Firebase config built in.
 - v1.2: own Firebase project, paste/share payment messages, "Where the money is" + cash count, shop→category suggestion.
 - v1.3: phone overlap fixes, quick buttons, swipe, pull to refresh, calendar, search, hide amounts, vibration, collection day.
+- v1.9: budgets + mood emoji + trend graphs on Home, EMI PDF/share, person statement options.
 - v1.8: calc keys, pay-for-a-person + New person, card due entry fix, gift/loan edit fixes, EMI copy fix.
 - v1.7: EMIs (card/loan, interest per month/year, GST, auto bills) + "What this means" box in the entry form.
 - v1.6: monthly money fix (Save replaced nothing → wrong start month kept counting), paid-next-month rule, redraw on resume/date change.

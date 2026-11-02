@@ -268,6 +268,7 @@ function pageHome() {
   const body = `
     ${bookFilterChips()}
     ${syncLine()}
+    <div style="margin-top:12px">${moodCard()}</div>
     ${quickRow()}
     <div class="cols two" style="margin-top:12px">
       <div class="stack">
@@ -296,6 +297,7 @@ function pageHome() {
           <div class="stat"><span>You owe others</span><b class="${iOwe ? 'neg' : ''}">${inr(iOwe)}</b></div></div></a>` : ''}
       </div>
       <div class="stack">
+        ${trendCard()}
         <div class="card">
           <div class="card-title">${ic('pie_chart')}<span style="flex:1">Spending</span>${monthNav('homeMonth', k, fmtMonth(k))}</div>
           <div class="stats" style="margin-bottom:16px">

@@ -51,9 +51,12 @@ async function makePdf(title, subtitle, build) {
 }
 
 /* ---------- share sheet: message + PDF ---------- */
-function openShareSheet({ title, fileName, message, phone, build }) {
+// controls: optional HTML (chips / dates) shown above the message; changing them rebuilds the PDF with
+// build(options) and, when given, rewrites the message with messageFor(options)
+function openShareSheet({ title, fileName, message, phone, build, controls, messageFor }) {
   const s = openSheet(`${sheetHead(title)}
     <div class="sheet-body">
+      ${controls ? `<form id="sh-opts" onsubmit="return false">${controls}</form>` : ''}
       ${message != null ? field('Message', `<textarea id="sh-msg" rows="4">${esc(message)}</textarea>`) : ''}
       <p class="lead" id="sh-state">${ic('hourglass_top', 'sm')} Preparing PDF…</p>
     </div>
@@ -66,13 +69,26 @@ function openShareSheet({ title, fileName, message, phone, build }) {
   const wa = s.querySelector('#sh-wa');
   if (wa) { const upd = () => { wa.href = waLink(phone, msg()); }; upd(); s.querySelector('#sh-msg').oninput = upd; }
   // Build straight away so the Share tap still counts as a user action when the PDF is ready
-  let blob = null;
-  build().then(b => {
-    blob = b;
-    if (!s.isConnected) return;
-    s.querySelector('#sh-state').innerHTML = `${ic('check_circle', 'sm')} PDF ready. Share opens the list of apps – pick WhatsApp and the contact. (Some apps keep only the file; use “Message only” for the text.)`;
-    s.querySelector('#sh-share').disabled = s.querySelector('#sh-dl').disabled = false;
-  }).catch(e => { if (s.isConnected) s.querySelector('#sh-state').textContent = e.message || 'Could not make the PDF'; });
+  let blob = null, gen = 0;
+  const opts = () => { const f = s.querySelector('#sh-opts'); return f ? readForm(f) : {}; };
+  const make = () => {
+    const my = ++gen; blob = null;
+    s.querySelector('#sh-share').disabled = s.querySelector('#sh-dl').disabled = true;
+    s.querySelector('#sh-state').innerHTML = `${ic('hourglass_top', 'sm')} Preparing PDF…`;
+    build(opts()).then(b => {
+      if (my !== gen || !s.isConnected) return;
+      blob = b;
+      s.querySelector('#sh-state').innerHTML = `${ic('check_circle', 'sm')} PDF ready. Share opens the list of apps – pick WhatsApp and the contact. (Some apps keep only the file; use “Message only” for the text.)`;
+      s.querySelector('#sh-share').disabled = s.querySelector('#sh-dl').disabled = false;
+    }).catch(e => { if (my === gen && s.isConnected) s.querySelector('#sh-state').textContent = e.message || 'Could not make the PDF'; });
+  };
+  const of = s.querySelector('#sh-opts');
+  if (of) of.addEventListener('change', e => {
+    s.querySelectorAll('[data-show-when]').forEach(el => { const [n, v] = el.dataset.showWhen.split('='); el.classList.toggle('hide', opts()[n] !== v); });
+    if (messageFor && s.querySelector('#sh-msg')) { s.querySelector('#sh-msg').value = messageFor(opts()); s.querySelector('#sh-msg').dispatchEvent(new Event('input')); }
+    make();
+  });
+  make();
   s.querySelector('#sh-dl').onclick = () => { if (blob) { downloadBlob(fileName, blob); snack('PDF downloaded'); } };
   s.querySelector('#sh-share').onclick = async () => {
     if (!blob) return;
@@ -95,27 +111,48 @@ function personReminder(p, bal) {
     : bal < 0 ? `Hi ${p.name}, here is the statement of our money. I have to give you ${inr(-bal)}.`
       : `Hi ${p.name}, here is the statement of our money – all settled. Thank you!`;
 }
+// Statement options: what = all | taken (only money they took) ; when = all | month | custom (from, to)
+function stmtRange(o) {
+  if (o.when === 'month') { const k = thisMonth(); return { from: `${k}-01`, to: `${k}-${pad(daysIn(k))}`, label: fmtMonth(k) }; }
+  if (o.when === 'custom' && (o.from || o.to)) { const from = o.from || '0000-01-01', to = o.to || '9999-12-31'; return { from, to, label: `${o.from ? fmtDate(o.from) : 'start'} to ${o.to ? fmtDate(o.to) : 'today'}` }; }
+  return { from: '0000-01-01', to: '9999-12-31', label: 'All time' };
+}
 function sharePerson(id) {
   const x = X(), p = x.person.get(id); if (!p) return;
   const bal = x.owes.get(id) || 0;
-  openShareSheet({ title: `Statement · ${p.name}`, fileName: `Statement-${safeName(p.name)}-${today()}.pdf`, message: personReminder(p, bal), phone: p.phone, build: () => personPdf(id) });
+  const controls = `<div class="form-label" style="margin-top:0">What to include</div>
+    <div class="chips">${chip('what', 'all', 'All entries', true, 'receipt_long')}${chip('what', 'taken', 'Only money they took', false, 'north_east')}</div>
+    <div class="form-label">Period</div>
+    <div class="chips">${chip('when', 'all', 'All time', true)}${chip('when', 'month', 'This month', false)}${chip('when', 'custom', 'Choose dates', false, 'calendar_month')}</div>
+    <div class="grid2 hide" data-show-when="when=custom" style="margin-top:8px">${field('From', `<input type="date" name="from">`)}${field('To', `<input type="date" name="to" value="${today()}">`)}</div>`;
+  const messageFor = o => { const r = stmtRange(o); return personReminder(p, bal) + (r.label !== 'All time' ? ` (Statement: ${r.label}.)` : ''); };
+  openShareSheet({ title: `Statement · ${p.name}`, fileName: `Statement-${safeName(p.name)}-${today()}.pdf`, message: personReminder(p, bal), phone: p.phone,
+    controls, messageFor, build: o => personPdf(id, o) });
 }
-function personPdf(id) {
-  const x = X(), p = x.person.get(id), bal = x.owes.get(id) || 0;
-  const list = D.txns.filter(t => t.personId === id).sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0));
-  let run = num(p.opening);
-  const rows = run ? [['', 'Old balance', '', '', '', rs(run)]] : [];
-  for (const t of list) {
-    const out = t.type === 'lend' || t.type === 'repay';
-    run += (out ? 1 : -1) * num(t.amount);
-    rows.push([fmtDate(t.date), TT[t.type].label + (t.dueDate ? ` (return by ${fmtDate(t.dueDate)})` : ''), out ? rs(t.amount) : '', out ? '' : rs(t.amount),
+function personPdf(id, o = {}) {
+  const x = X(), p = x.person.get(id), bal = x.owes.get(id) || 0, R = stmtRange(o), takenOnly = o.what === 'taken';
+  const sign = t => (t.type === 'lend' || t.type === 'repay' ? 1 : -1);
+  const all = D.txns.filter(t => t.personId === id).sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0));
+  // balance carried in from before the period
+  let run = num(p.opening) + sum(all.filter(t => t.date < R.from), t => sign(t) * num(t.amount));
+  const before = run;
+  const inRange = all.filter(t => t.date >= R.from && t.date <= R.to);
+  const rows = R.from !== '0000-01-01' ? [['', `Balance before ${fmtDate(R.from)}`, '', '', '', run < 0 ? rs(-run) + ' (I owe)' : rs(run)]] : run ? [['', 'Old balance', '', '', '', rs(run)]] : [];
+  for (const t of inRange) {
+    const out = sign(t) > 0;
+    run += sign(t) * num(t.amount);
+    if (takenOnly && t.type !== 'lend') continue;
+    const what = TT[t.type].label + (x.cat.get(t.categoryId) ? ` - ${x.cat.get(t.categoryId).name}` : '') + (t.dueDate ? ` (return by ${fmtDate(t.dueDate)})` : '');
+    rows.push([fmtDate(t.date), what, out ? rs(t.amount) : '', out ? '' : rs(t.amount),
       [t.mode, whereLabel(t.accountId, x)].filter(Boolean).join(' - ') + (t.note ? ' - ' + t.note : ''), run < 0 ? rs(-run) + ' (I owe)' : rs(run)]);
   }
-  const given = sum(list.filter(t => t.type === 'lend' || t.type === 'repay'), t => t.amount), got = sum(list.filter(t => t.type === 'collect' || t.type === 'borrow'), t => t.amount);
-  return makePdf(`Statement - ${p.name}`, [p.relation, p.phone].filter(Boolean).join('  -  ') || 'Money given and received', d => {
-    d.kv([[bal > 0 ? `Balance ${p.name} has to pay` : bal < 0 ? `Balance I have to pay ${p.name}` : 'Balance', bal ? rs(Math.abs(bal)) : 'Settled'],
-      ['Total given', rs(given + Math.max(0, num(p.opening)))], ['Total received', rs(got + Math.max(0, -num(p.opening)))]]);
-    d.heading('All entries');
+  const given = sum(inRange.filter(t => sign(t) > 0), t => t.amount), got = sum(inRange.filter(t => sign(t) < 0), t => t.amount), took = sum(inRange.filter(t => t.type === 'lend'), t => t.amount);
+  return makePdf(`Statement - ${p.name}`, `${R.label}${takenOnly ? '  -  money taken' : ''}${p.phone ? '  -  ' + p.phone : ''}`, d => {
+    d.kv([[bal > 0 ? `${p.name} has to pay now` : bal < 0 ? `I have to pay ${p.name} now` : 'Balance now', bal ? rs(Math.abs(bal)) : 'Settled'],
+      ...(R.from !== '0000-01-01' ? [['Balance at start of period', before < 0 ? rs(-before) + ' (I owe)' : rs(before)]] : []),
+      takenOnly ? ['Money taken in this period', rs(took)] : ['Given in this period', rs(given)],
+      ...(takenOnly ? [] : [['Received in this period', rs(got)]])]);
+    d.heading(takenOnly ? 'Money taken' : 'Entries');
     d.table(['Date', 'Entry', 'Given', 'Received', 'How / where', 'Balance'], rows, { columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' } } });
   });
 }

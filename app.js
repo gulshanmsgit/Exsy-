@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -312,7 +312,7 @@ const NAV = [
   { id: 'people', label: 'People', icon: 'handshake' },
   { id: 'more', label: 'More', icon: 'menu' }
 ];
-const NAV_OF = { chit: 'chits', person: 'people', accounts: 'more', account: 'more', reports: 'more', cats: 'more', recurring: 'more', sync: 'more', calendar: 'txns', collect: 'chits', homecosts: 'more', mother: 'more', emis: 'more', emi: 'more' };
+const NAV_OF = { chit: 'chits', person: 'people', accounts: 'more', account: 'more', reports: 'more', cats: 'more', recurring: 'more', sync: 'more', calendar: 'txns', collect: 'chits', homecosts: 'more', mother: 'more', emis: 'more', emi: 'more', budgets: 'home' };
 function route() {
   const [p, a] = location.hash.replace(/^#\/?/, '').split('/');
   return { p: PAGES[p] ? p : 'home', a: a ? decodeURIComponent(a) : '' };

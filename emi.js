@@ -85,7 +85,8 @@ function pageEmi(id) {
   const e = emiById(id);
   if (!e) return { title: 'EMI', back: '#/emis', body: '<div class="empty">This EMI was deleted.</div>' };
   const s = emiSchedule(e), x = X(), t0 = today(), extra = round2(s.total - num(e.principal));
-  const body = `<div class="card primary">
+  const body = `<div class="btn-row" style="margin-bottom:12px"><button class="btn tonal" data-act="shareEmi" data-id="${id}">${ic('share')}Share / PDF – full bill breakdown</button></div>
+    <div class="card primary">
       <div class="hero-label">${esc(accLabel(e.accountId, x))}${e.personId ? ` · for ${esc(x.person.get(e.personId)?.name || '?')} (they pay you back)` : ''}</div>
       <div class="hero-num">${inr(s.monthly)}<span style="font-size:16px;opacity:.8"> / month</span></div>
       <div class="stats">
@@ -102,7 +103,7 @@ function pageEmi(id) {
       ${s.rows.map(r => `<tr class="${r.date <= t0 ? 'done' : ''}"><th class="name">${r.k}${r.date <= t0 ? ' ✓' : ''}</th><td>${fmtDay(r.date)} ’${r.date.slice(2, 4)}</td><td>${inr(r.principal)}</td><td>${inr(r.interest)}</td>
         <td>${inr(r.gst + r.feeGst)}</td><td><b>${inr(r.total)}</b>${r.fee ? '<br><small>incl. fee</small>' : ''}</td><td>${inr(r.balance)}</td></tr>`).join('')}
     </tbody></table></div>`;
-  return { title: e.name, back: '#/emis', body, fab: false, actions: `<button class="icon-btn" data-act="editEmi" data-id="${id}" title="Edit EMI" aria-label="Edit EMI">${ic('edit')}</button>` };
+  return { title: e.name, back: '#/emis', body, fab: false, actions: `<button class="icon-btn" data-act="shareEmi" data-id="${id}" title="PDF / share" aria-label="PDF or share">${ic('picture_as_pdf')}</button><button class="icon-btn" data-act="editEmi" data-id="${id}" title="Edit EMI" aria-label="Edit EMI">${ic('edit')}</button>` };
 }
 
 /* ---------- add / edit ---------- */
@@ -182,4 +183,28 @@ function emiAttention() {
     if (d <= 5) out.push({ icon: 'credit_card', cls: 'info', title: `EMI ${inr(r.total)} · ${e.name}`, sub: `${d === 0 ? 'Today' : `In ${d} day${d > 1 ? 's' : ''}`} (${fmtDay(r.date)}) on ${accLabel(e.accountId, X())} – EMI ${r.k} of ${emiSchedule(e).rows.length}`, go: `#/emi/${e.id}` });
   }
   return out;
+}
+
+/* ---------- PDF / share: the whole month-by-month bill ---------- */
+function shareEmi(id) {
+  const e = emiById(id); if (!e) return;
+  const x = X(), p = e.personId && x.person.get(e.personId), s = emiSchedule(e);
+  const message = p ? `Hi ${p.name}, here is the EMI breakdown for ${e.name}: ${inr(s.monthly)} a month for ${s.rows.length} months (total ${inr(s.total)}). Thank you!` : null;
+  openShareSheet({ title: `EMI · ${e.name}`, fileName: `EMI-${safeName(e.name)}.pdf`, message, phone: p?.phone, build: () => emiPdf(id) });
+}
+function emiPdf(id) {
+  const e = emiById(id), x = X(), s = emiSchedule(e), t0 = today();
+  const paid = s.rows.filter(r => r.date <= t0), left = s.rows.filter(r => r.date > t0);
+  return makePdf(`EMI - ${e.name}`, `${accLabel(e.accountId, x)}  -  ${num(e.rate)}% ${e.ratePer === 'year' ? 'a year' : 'a month'}  -  ${s.rows.length} months from ${fmtDate(s.rows[0].date)}`, d => {
+    d.kv([['Price / loan amount', rs(e.principal)], ['EMI', rs(s.emi)], ['Monthly bill (with GST on interest)', `about ${rs(Math.round(s.monthly))}`],
+      ['Total interest', rs(s.interest)], [`GST (${num(e.gst ?? 18)}%)`, rs(s.gst)], ...(s.fee ? [['Processing fee', rs(s.fee)]] : []),
+      ['Total bill', rs(s.total)], ['Extra over the price', rs(s.total - num(e.principal))],
+      ['Paid so far', `${rs(sum(paid, r => r.total))} (${paid.length} of ${s.rows.length})`], ['Still to pay', rs(sum(left, r => r.total))],
+      ...(e.personId ? [['For', `${x.person.get(e.personId)?.name || ''} (pays back)`]] : [])]);
+    d.heading('Month by month');
+    d.table(['#', 'Date', 'Principal', 'Interest', 'GST', 'Fee + GST', 'Bill', 'Left', 'Status'],
+      [...s.rows.map(r => [String(r.k), fmtDate(r.date), rs(r.principal), rs(r.interest), rs(r.gst), r.fee ? rs(r.fee + r.feeGst) : '-', rs(r.total), rs(r.balance), r.date <= t0 ? 'Paid' : 'Due']),
+       ['', 'Total', rs(sum(s.rows, r => r.principal)), rs(s.interest), rs(sum(s.rows, r => r.gst)), s.fee ? rs(sum(s.rows, r => r.fee + r.feeGst)) : '-', rs(s.total), '', '']],
+      { styles: { fontSize: 8, cellPadding: 4 }, columnStyles: { 0: { cellWidth: 20 }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right', fontStyle: 'bold' }, 7: { halign: 'right' } } });
+  });
 }

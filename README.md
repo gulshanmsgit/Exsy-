@@ -64,6 +64,15 @@ One number on **More → Mother's money** (also shown on Home): how much of Moth
   accounts and hers).
 - Positive = *Mother's money with you*; negative = *Mother owes you*. Month-by-month statement on the same page.
 
+## Budget, mood and trends
+
+- **More → Budget:** a total for the month (which books it counts) and limits per category; suggestions from the
+  last 3 months' average.
+- **Mood at the top of Home:** 🤩 well under · 😊 on track · 😬 spending faster than planned · 😟 almost at the
+  limit · 😱 over budget (it shakes), with what is left per day.
+- **Spending trend on Home:** *This month* (day by day vs last month and the budget pace), *6 months* or
+  *12 months* (bars, red when over budget; tap a bar for its entries), with a category filter.
+
 ## EMIs (More → EMIs)
 
 Enter what it is, the card (or bank), price, interest rate (**per month** like 1.33% or **per year**), months, first EMI
@@ -72,6 +81,7 @@ EMI + GST on that month's interest (+ fee and its GST in the first month), shows
 extra cost, and on each due date adds the bill as an expense on the card. If the EMI is for someone else
 (e.g. Sister's phone on your card), choose *Sister (pays me back)* and each bill is recorded as money lent to her.
 Don't also add the purchase itself – the EMIs are the expense. Home reminds you 5 days before each EMI.
+**Share / PDF** on an EMI gives the whole month-by-month bill (principal, interest, GST, fee, total, paid / due).
 
 ## “What this means” in every entry
 
@@ -95,8 +105,9 @@ see your name in these sentences.
 
 ## PDF statements and reminders
 
-- **People → a person → Remind / Statement:** edit the reminder text, then **Share PDF + message** (pick WhatsApp),
-  **Download PDF**, or **Message only**.
+- **People → a person → Remind / Statement:** choose *All entries* or *Only money they took*, and *All time*,
+  *This month* or *Choose dates*; the PDF starts with what they owe now. Then **Share PDF + message** (pick
+  WhatsApp), **Download PDF**, or **Message only**.
 - **Chit → member → Statement PDF**, and the PDF icon at the top of a chit for the whole group report.
 - **Reports → PDF** for the month/year shown.
 
@@ -119,6 +130,7 @@ choose **Package for stores → Android** and download the package; the `.apk` i
 | `home.js` | Mother's money: monthly money, home costs, given / received, one running balance |
 | `emi.js` | EMIs: schedule with interest + GST, monthly bills added on their dates |
 | `explain.js` | “What this means” sentence in the entry form |
+| `budget.js` | Monthly budget, mood emoji, spending trend graphs |
 | `extras.js` | Quick buttons, swipe, pull to refresh, calendar, search, hide amounts, collection day |
 | `quick.js` | Paste/share payment messages, balances card, cash count |
 | `more.js` | Reports, settings, sync, categories, reminders, setup, lock, start-up |
