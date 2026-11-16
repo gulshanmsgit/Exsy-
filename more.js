@@ -599,7 +599,9 @@ document.addEventListener('visibilitychange', () => {
   const mode = lsGet(LS.mode, '');
   if (mode) await connect(mode);
   render();
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Website only: in the Android app (Capacitor) the files are already on the phone
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.Capacitor) navigator.serviceWorker.register('sw.js').catch(() => {});
+  else if ('serviceWorker' in navigator && window.Capacitor) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
 })();
 
 /* ---------- More → Bottom bar: choose the 3 tabs between Home and More ---------- */
