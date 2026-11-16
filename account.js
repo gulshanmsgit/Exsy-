@@ -6,6 +6,17 @@
 
 const MIGRATE = 'exsy.migrateFrom';
 const isAccountMode = () => lsGet(LS.mode, '') === 'account';
+// Inside the Android app Google blocks its sign-in page in web views, so the phone's own account picker is used
+// (@capacitor-firebase/authentication, skipNativeAuth) and its ID token signs in the web Firebase SDK.
+const isNativeApp = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+let nativeAuthPlugin = null;
+const nativeAuth = () => nativeAuthPlugin || (nativeAuthPlugin = window.Capacitor.registerPlugin('FirebaseAuthentication'));
+async function nativeGoogleSignIn(fb) {
+  const r = await nativeAuth().signInWithGoogle();
+  const idToken = r && r.credential && r.credential.idToken;
+  if (!idToken) throw Object.assign(new Error('No Google token'), { code: 'native/no-token' });
+  await fb.Au.signInWithCredential(fb.auth, fb.Au.GoogleAuthProvider.credential(idToken));
+}
 
 async function googleSignIn() {
   const cfg = FIREBASE_CONFIG || lsGet(LS.cfg, null);
@@ -19,9 +30,19 @@ async function googleSignIn() {
   const provider = new fb.Au.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
-    await fb.Au.signInWithPopup(fb.auth, provider);
+    if (isNativeApp()) await nativeGoogleSignIn(fb);
+    else await fb.Au.signInWithPopup(fb.auth, provider);
   } catch (e) {
-    const c = e && e.code;
+    const c = e && e.code, msg = String(e && e.message || '');
+    console.error('sign-in', c, msg);
+    if (isNativeApp()) {
+      lsSet(MIGRATE, null);
+      if (/cancel/i.test(msg)) snack('Sign-in cancelled');
+      else if (/network|internet/i.test(msg)) snack('No internet – try again when online');
+      else if (/developer|10:|12500|not configured|google-services|default firebaseapp/i.test(msg)) snack('Google sign-in is not set up for this app yet (Firebase Android app / SHA-1)');
+      else snack('Sign-in failed: ' + (c || msg));
+      return;
+    }
     if (c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment') {
       lsSet(LS.mode, 'account');                     // the app comes back after Google's page and finishes in connect()
       await fb.Au.signInWithRedirect(fb.auth, provider);
@@ -48,6 +69,7 @@ function googleSignOut() {
     text: `Your money book stays safe in ${esc(authUser?.email || 'your Google account')}. Sign in again with the same account to open it on any device.`,
     onOk: async () => {
       try { if (fbMods) await fbMods.Au.signOut(fbMods.auth); } catch (e) { console.error(e); }
+      if (isNativeApp()) try { await nativeAuth().signOut(); } catch (e) { console.error(e); }   // forget the phone's chosen account too
       authUser = null; if (store) store.stop(); store = null; lsSet(LS.mode, ''); render();
     }
   });
