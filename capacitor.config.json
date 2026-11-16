@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.gulshanmsgit.exsy",
+  "appName": "Exsy",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#f5fbf5"
+  }
+}

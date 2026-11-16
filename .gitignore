@@ -3,3 +3,5 @@
 marketing/*.mp4
 marketing/*.wav
 marketing/voice/
+node_modules/
+www/
