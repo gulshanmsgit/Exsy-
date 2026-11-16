@@ -10,7 +10,9 @@ const isAccountMode = () => lsGet(LS.mode, '') === 'account';
 // (@capacitor-firebase/authentication, skipNativeAuth) and its ID token signs in the web Firebase SDK.
 const isNativeApp = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 let nativeAuthPlugin = null;
-const nativeAuth = () => nativeAuthPlugin || (nativeAuthPlugin = window.Capacitor.registerPlugin('FirebaseAuthentication'));
+// no bundler here, so @capacitor/core's registerPlugin is not loaded – the native bridge lists the plugin on Capacitor.Plugins
+const nativeAuth = () => nativeAuthPlugin || (nativeAuthPlugin = (window.Capacitor.Plugins || {}).FirebaseAuthentication ||
+  (window.Capacitor.registerPlugin && window.Capacitor.registerPlugin('FirebaseAuthentication')));
 async function nativeGoogleSignIn(fb) {
   const r = await nativeAuth().signInWithGoogle();
   const idToken = r && r.credential && r.credential.idToken;

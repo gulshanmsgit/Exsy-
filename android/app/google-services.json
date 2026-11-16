@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "739111637553",
+    "project_id": "exsy-591a1",
+    "storage_bucket": "exsy-591a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739111637553:android:6d0d391acd8ed51ec0bb10",
+        "android_client_info": {
+          "package_name": "io.github.gulshanmsgit.exsy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "739111637553-dqv6bg6j1fhm1ijrpk5ckstq91f6i0dd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.github.gulshanmsgit.exsy",
+            "certificate_hash": "b30ebdc103ccc512a300bef597be8e8178f96f25"
+          }
+        },
+        {
+          "client_id": "739111637553-6rfrpge4pq80ah95pqc3rl64684883ln.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBN3Nv4wzSZNVjD2Kfj0kQTCSsYliznZzo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "739111637553-6rfrpge4pq80ah95pqc3rl64684883ln.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
