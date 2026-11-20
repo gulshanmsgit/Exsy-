@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.13.0';
+const APP_VERSION = '1.14.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -157,9 +157,27 @@ async function fbInit(cfg) {
   fbMods = { F, Au, db, auth: Au.getAuth(app) };
   return fbMods;
 }
+// Signing out / forgetting the sync code: remove this device's offline copy of the cloud money book
+// (Firestore keeps it in the browser's IndexedDB), then start fresh on the welcome screen.
+async function forgetCloudCopy() {
+  if (store) store.stop();
+  store = null;
+  if (fbMods) {
+    try { await fbMods.F.terminate(fbMods.db); await fbMods.F.clearIndexedDbPersistence(fbMods.db); } catch (e) { console.error('clear cache', e); }
+  }
+  location.reload();
+}
+// Sync-code books need a signed-in user (Firestore rules): a quiet anonymous sign-in, unless someone is already signed in
+async function ensureSignedIn(fb) {
+  try {
+    if (fb.auth.authStateReady) await fb.auth.authStateReady();
+    if (!fb.auth.currentUser) await fb.Au.signInAnonymously(fb.auth);
+  } catch (e) { console.error('anonymous sign-in', e && e.code); }   // e.g. not switched on in Firebase yet
+}
 // root 'moneybooks' + sync code (shared by code) or 'users' + Google uid (private to that account)
 async function cloudStore(cfg, ws, root = FIRESTORE_ROOT) {
-  const { F, db } = await fbInit(cfg);
+  const fb = await fbInit(cfg), { F, db } = fb;
+  if (root === FIRESTORE_ROOT) await ensureSignedIn(fb);
   const ref = (c, id) => F.doc(db, root, ws, c, id);
   const unsubs = [];
   let cbs = null;
@@ -241,6 +259,7 @@ async function connect(mode) {
       const fb = await fbInit(cfg);
       try { await fb.Au.getRedirectResult(fb.auth); } catch (e) { console.warn('redirect sign-in', e); }
       authUser = await new Promise(res => { const un = fb.Au.onAuthStateChanged(fb.auth, u => { un(); res(u); }); });
+      if (authUser && authUser.isAnonymous) authUser = null;   // the quiet sync-code sign-in is not a Google account
       if (!authUser) { store = null; lsSet(LS.mode, ''); return; }
       store = await cloudStore(cfg, authUser.uid, 'users');
     } catch (e) { console.error(e); store = null; lsSet(LS.mode, ''); snack('Could not open your Google account – check the internet connection'); return; }
@@ -312,6 +331,9 @@ function cardDue(a, x) {
    UI state, rendering, routing
    ============================================================ */
 const app = document.getElementById('app');
+// No form in Exsy is ever sent anywhere: Enter in a field must not reload the page (forms with their own
+// onsubmit still run it – this only stops the browser's default)
+document.addEventListener('submit', e => e.preventDefault());
 const UI = Object.assign({ book: 'all', txMonth: thisMonth(), q: '', txType: '', txCat: '', txAcc: '', txStore: '', chitTab: 'month', chitMonth: {}, repMode: 'month', repMonth: thisMonth(), repYear: today().slice(0, 4), catTab: 'expense', homeMonth: thisMonth() }, lsGet(LS.ui, {}));
 UI.q = '';
 function setUI(k, v) { UI[k] = v; lsSet(LS.ui, { book: UI.book, chitTab: UI.chitTab, repMode: UI.repMode, catTab: UI.catTab }); scheduleRender(); }

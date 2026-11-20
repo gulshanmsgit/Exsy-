@@ -126,14 +126,15 @@ function pageSync() {
       <p class="muted" style="margin-bottom:12px">Your data stays in the cloud. This device goes back to the start screen.</p>
       <button class="btn outlined danger" data-act="signOut">Forget sync code on this device</button></div>${googleCard}`
     : `<div class="card"><div class="card-title">${ic('phone_android')}Saved on this device only</div>
-      <p class="muted">Your entries are in this browser. Turn on sync to use the same money book on your phone and laptop, with an online backup.</p></div>
-      <div class="card" style="margin-top:12px"><div class="card-title">${ic('cloud_sync')}Turn on sync</div>
-      ${hasCfg ? `<div class="btn-row"><button class="btn filled" data-act="newCloud">${ic('add')}Create my sync code</button><button class="btn outlined" data-act="enterCode">${ic('key')}I already have a code</button></div>
-        <p class="muted" style="margin-top:12px">Your current entries on this device are copied to the cloud.</p>`
+      <p class="muted">Your entries are in this browser. Sign in with Google to use the same money book on your phone and laptop, with an online backup.</p></div>
+      ${googleCard}
+      <div class="card" style="margin-top:12px"><div class="card-title">${ic('key')}Already using a sync code?</div>
+      ${hasCfg ? `<p class="muted" style="margin-bottom:12px">Devices set up with a sync code in older versions keep working. New syncing is done with Google sign-in.</p>
+        <div class="btn-row"><button class="btn outlined" data-act="enterCode">${ic('key')}I have a sync code</button></div>`
         : `<p class="muted" style="margin-bottom:12px">First connect your Firebase project: Firebase console → Project settings → Your apps → Web app → copy the <b>firebaseConfig</b> block and paste it here.</p>
           <label class="field"><span>Firebase config</span><textarea id="cfg-in" rows="7" placeholder='const firebaseConfig = { apiKey: "…", authDomain: "…", projectId: "…", … };'></textarea></label>
           <div class="btn-row" style="margin-top:12px"><button class="btn filled" data-act="saveCfg">${ic('check')}Save config</button></div>`}
-      </div>${googleCard}`;
+      </div>`;
   return { title: 'Sync & devices', back: '#/more', body, fab: false };
 }
 function parseFirebaseConfig(text) {
@@ -436,11 +437,26 @@ function keypad(onDone, title, sub) {
   };
 }
 let lockPad = null;
+// Wrong PINs: after 5 in a row the lock waits 30 s, then 1, 2, 4… minutes (max 1 hour) – so nobody can try all 10,000 PINs.
+// Kept in localStorage, so closing and reopening the app does not reset the wait.
+const PIN_FAILS = 'exsy.pinFails';
+const pinWait = () => Math.max(0, (lsGet(PIN_FAILS, {}) || {}).until - Date.now() || 0);
 function renderLock() {
   if (!lockPad) lockPad = keypad(async (pin, fail) => {
     if (pin == null) return;
-    if (await pinHash(pin) === lsGet(LS.pin, '')) { locked = false; lockPad = null; try { sessionStorage.setItem('exsy.unlocked', '1'); } catch { /* private mode */ } render(); }
-    else fail();
+    const wait = pinWait();
+    if (wait) { fail(); snack(`Too many wrong PINs – try again in ${Math.ceil(wait / 1000)} seconds`); return; }
+    if (await pinHash(pin) === lsGet(LS.pin, '')) {
+      localStorage.removeItem(PIN_FAILS);
+      locked = false; lockPad = null; try { sessionStorage.setItem('exsy.unlocked', '1'); } catch { /* private mode */ } render();
+    } else {
+      const n = ((lsGet(PIN_FAILS, {}) || {}).n || 0) + 1;
+      const until = n >= 5 ? Date.now() + Math.min(3600e3, 30e3 * 2 ** (n - 5)) : 0;
+      lsSet(PIN_FAILS, { n, until });
+      fail();
+      if (until) snack(`Too many wrong PINs – try again in ${Math.ceil((until - Date.now()) / 1000)} seconds`);
+      else if (n >= 3) snack(`Wrong PIN – ${5 - n} more ${5 - n === 1 ? 'try' : 'tries'} before a short wait`);
+    }
   }, 'Enter PIN', 'Exsy is locked');
   lockPad.draw(app);
   app.onclick = e => { const b = e.target.closest('[data-k]'); if (b && locked && lockPad) lockPad.press(app, b.dataset.k); };
@@ -622,7 +638,7 @@ const ACT = {
   },
   copyJoin: () => copyText(joinLink(), 'Link copied – open it once on your other device'),
   showCode: () => openSheet(`${sheetHead('Your sync code')}<div class="code-box">${esc(lsGet(LS.code, ''))}</div><div class="sheet-actions"><button class="btn filled" id="cc">${ic('content_copy')}Copy</button></div>`).querySelector('#cc').onclick = () => copyText(lsGet(LS.code, '')),
-  signOut: () => confirmSheet({ title: 'Stop syncing here?', ok: 'Forget code', text: 'This device forgets the sync code. Your data stays safe in the cloud and on your other devices.', onOk: async () => { localStorage.removeItem(LS.code); lsSet(LS.mode, ''); if (store) store.stop(); store = null; render(); } })
+  signOut: () => confirmSheet({ title: 'Stop syncing here?', ok: 'Forget code', text: 'This device forgets the sync code. Your data stays safe in the cloud and on your other devices.', onOk: async () => { localStorage.removeItem(LS.code); lsSet(LS.mode, ''); await forgetCloudCopy(); } })
 };
 
 document.addEventListener('click', e => {

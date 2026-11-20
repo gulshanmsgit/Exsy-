@@ -2,11 +2,15 @@
 /* PDF statements and reports (jsPDF from cdnjs, loaded on first use), shared with a message
    through the phone's share sheet (WhatsApp etc.) or downloaded. */
 
-const PDF_LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'];
+// [url, fingerprint]: the browser refuses the file if even one byte differs from the version tested with Exsy
+const PDF_LIBS = [
+  ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk'],
+  ['https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', 'sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3']
+];
 let pdfReady = null;
-const loadScript = src => new Promise((res, rej) => {
+const loadScript = ([src, integrity]) => new Promise((res, rej) => {
   const s = document.createElement('script');
-  s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load the PDF maker – check the internet connection'));
+  s.src = src; s.integrity = integrity; s.crossOrigin = 'anonymous'; s.onload = res; s.onerror = () => rej(new Error('Could not load the PDF maker – check the internet connection'));
   document.head.appendChild(s);
 });
 function loadPdf() {
@@ -56,7 +60,7 @@ async function makePdf(title, subtitle, build) {
 function openShareSheet({ title, fileName, message, phone, build, controls, messageFor }) {
   const s = openSheet(`${sheetHead(title)}
     <div class="sheet-body">
-      ${controls ? `<form id="sh-opts" onsubmit="return false">${controls}</form>` : ''}
+      ${controls ? `<form id="sh-opts">${controls}</form>` : ''}
       ${message != null ? field('Message', `<textarea id="sh-msg" rows="4">${esc(message)}</textarea>`) : ''}
       <p class="lead" id="sh-state">${ic('hourglass_top', 'sm')} Preparing PDF…</p>
     </div>

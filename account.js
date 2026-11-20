@@ -72,7 +72,7 @@ function googleSignOut() {
     onOk: async () => {
       try { if (fbMods) await fbMods.Au.signOut(fbMods.auth); } catch (e) { console.error(e); }
       if (isNativeApp()) try { await nativeAuth().signOut(); } catch (e) { console.error(e); }   // forget the phone's chosen account too
-      authUser = null; if (store) store.stop(); store = null; lsSet(LS.mode, ''); render();
+      authUser = null; lsSet(LS.mode, ''); await forgetCloudCopy();
     }
   });
 }

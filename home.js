@@ -119,7 +119,7 @@ function pageMother() {
         ${plan ? `<button class="btn text danger" data-act="motherSalaryOff">Stop monthly money</button>` : ''}</div></details>
 
     <details class="card fold" style="margin-top:12px"><summary>${ic('sync')}<span>Automatic pay-back</span><small>${ab.on ? 'On' : 'Off'}</small></summary>
-      <form id="ab-form" onsubmit="return false">
+      <form id="ab-form">
         <label class="switch-row" style="margin-top:8px"><span>When I pay a home bill online, ${esc(name)} pays it back right away</span><input type="checkbox" name="on" ${ab.on ? 'checked' : ''}></label>
         <div class="form-label">From ${esc(name)}’s</div>${accOpts(L.mom, ab.from, 'from')}
         <div class="form-label">Into my</div>${accOpts(meBook()?.id, ab.to, 'to')}

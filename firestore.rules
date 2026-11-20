@@ -1,20 +1,33 @@
 rules_version = '2';
 // Firestore rules for the Exsy Firebase project (exsy-591a1).
 // Publish: Firebase console → Firestore Database → Rules → paste this whole file → Publish.
+// Before publishing: Firebase console → Authentication → Sign-in method → turn on "Anonymous"
+// (sync-code devices sign in quietly with it; without it they could not open their book any more).
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // The only kinds of records Exsy stores
+    function okColl(coll) {
+      return coll in ['books', 'accounts', 'txns', 'categories', 'stores', 'people', 'recurring',
+                      'chits', 'chitMembers', 'chitPayments', 'chitDraws', 'prefs'];
+    }
+    // A record being saved must look like an Exsy record: short id, a sensible number of fields.
+    // (Stops someone filling the database with junk or huge records.)
+    function okRecord(docId) {
+      return docId.size() <= 64 && request.resource.data.keys().size() <= 60;
+    }
+
     // Signed in with Google: each person's money book is private to their own account.
     match /users/{uid}/{coll}/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid
-        && coll in ['books', 'accounts', 'txns', 'categories', 'stores', 'people', 'recurring',
-                    'chits', 'chitMembers', 'chitPayments', 'chitDraws', 'prefs'];
+      allow read, delete: if request.auth != null && request.auth.uid == uid && okColl(coll);
+      allow create, update: if request.auth != null && request.auth.uid == uid && okColl(coll) && okRecord(docId);
     }
-    // Each money book lives under an unguessable sync code (24+ characters).
-    // There is no rule for listing the top level, so nobody can browse other books: you need the exact code.
+
+    // Older sync-code books: need a signed-in device (Google or the quiet anonymous sign-in)
+    // and the exact unguessable code (24+ characters). Nobody can list or browse other books.
     match /moneybooks/{ws}/{coll}/{docId} {
-      allow read, write: if ws.size() >= 24
-        && coll in ['books', 'accounts', 'txns', 'categories', 'stores', 'people', 'recurring',
-                    'chits', 'chitMembers', 'chitPayments', 'chitDraws', 'prefs'];
+      allow read, delete: if request.auth != null && ws.size() >= 24 && okColl(coll);
+      allow create, update: if request.auth != null && ws.size() >= 24 && okColl(coll) && okRecord(docId);
     }
   }
 }
