@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.12.0';
+const APP_VERSION = '1.13.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -76,7 +76,7 @@ const randCode = (n = 32) => { const abc = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLM
 
 /* ---------- icons (Material Symbols, only the glyphs we use are downloaded) ---------- */
 const ICON_CHOICES = ['shopping_basket', 'nutrition', 'local_drink', 'cleaning_services', 'medication', 'bolt', 'water_drop', 'local_fire_department', 'wifi', 'local_gas_station', 'directions_bus', 'restaurant', 'checkroom', 'school', 'house', 'account_balance', 'shield', 'redeem', 'temple_hindu', 'build', 'spa', 'movie', 'category', 'payments', 'family_restroom', 'percent', 'currency_exchange', 'groups', 'savings', 'shopping_cart', 'storefront', 'shopping_bag', 'local_shipping', 'store', 'local_pharmacy', 'delivery_dining', 'language', 'more_horiz', 'pets', 'child_care', 'sports_cricket', 'flight', 'train', 'two_wheeler', 'directions_car', 'phone_iphone', 'tv', 'laptop', 'celebration', 'volunteer_activism', 'work', 'receipt', 'local_cafe', 'bakery_dining', 'egg', 'set_meal', 'lunch_dining', 'local_laundry_service', 'content_cut', 'fitness_center', 'hotel', 'checklist', 'local_hospital', 'agriculture', 'construction', 'card_giftcard', 'person', 'face', 'elderly', 'elderly_woman', 'woman', 'man', 'home_work'];
-const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description', 'content_paste', 'refresh', 'cloud_upload', 'vibration', 'arrow_upward', 'event_available', 'bolt', 'calculate', 'login', 'logout', 'verified_user'];
+const UI_ICONS = ['home', 'receipt_long', 'handshake', 'menu', 'add', 'close', 'arrow_back', 'chevron_left', 'chevron_right', 'edit', 'delete', 'search', 'more_vert', 'cloud_done', 'cloud_off', 'phone_android', 'lock', 'lock_open', 'backspace', 'check', 'check_circle', 'schedule', 'warning', 'error', 'casino', 'emoji_events', 'person_add', 'account_balance_wallet', 'credit_card', 'trending_up', 'trending_down', 'swap_horiz', 'north_east', 'south_west', 'download', 'upload', 'settings', 'dark_mode', 'light_mode', 'contrast', 'event_repeat', 'bar_chart', 'pie_chart', 'content_copy', 'share', 'link', 'info', 'expand_more', 'expand_less', 'notifications', 'chat', 'call', 'today', 'calendar_month', 'tune', 'visibility', 'visibility_off', 'restart_alt', 'undo', 'account_circle', 'sync', 'add_card', 'payments', 'account_balance', 'savings', 'groups', 'storefront', 'category', 'person', 'pending', 'task_alt', 'hourglass_top', 'military_tech', 'table_chart', 'list', 'event', 'auto_awesome', 'science', 'delete_forever', 'cloud_sync', 'key', 'dataset', 'insights', 'paid', 'filter_alt_off', 'wallet', 'move_down', 'more_horiz', 'picture_as_pdf', 'description', 'content_paste', 'refresh', 'cloud_upload', 'vibration', 'arrow_upward', 'event_available', 'bolt', 'calculate', 'login', 'logout', 'verified_user', 'widgets', 'flag', 'radio_button_unchecked'];
 const ALL_ICONS = new Set([...ICON_CHOICES, ...UI_ICONS]);
 (function loadIconFont() {
   const names = [...ALL_ICONS].sort().join(',');
@@ -328,16 +328,38 @@ const scheduleRender = () => {
 const NAV_CHOICES = [
   { id: 'txns', label: 'Entries', icon: 'receipt_long' }, { id: 'chits', label: 'Chits', icon: 'groups' },
   { id: 'people', label: 'People', icon: 'handshake' }, { id: 'emis', label: 'EMIs', icon: 'credit_card' },
-  { id: 'budgets', label: 'Budget', icon: 'savings' }, { id: 'mother', label: 'Mother', icon: 'house' },
+  { id: 'budgets', label: 'Budget', icon: 'savings' }, { id: 'mother', label: 'Family money', icon: 'house' },
   { id: 'calendar', label: 'Calendar', icon: 'calendar_month' }, { id: 'reports', label: 'Reports', icon: 'bar_chart' },
   { id: 'accounts', label: 'Accounts', icon: 'account_balance' }, { id: 'collect', label: 'Collect', icon: 'event_available' }
 ];
 const NAV_DEFAULT = ['txns', 'chits', 'people'], NAV_MAX = 3;
+// used to fill the bar when a tab disappears because its feature was switched off
+const NAV_FILL = ['txns', 'chits', 'people', 'emis', 'budgets', 'reports', 'accounts'];
+
+/* Features – picked during setup, changed in More → Features. Switching one off only hides its screens; no data is deleted.
+   Money books made before this setting existed have no saved choice, so everything stays on for them. */
+const FEATURES = [
+  ['family', 'Family money', 'house', 'Books for parents or spouse, and a page for the family member whose money pays for the home'],
+  ['chits', 'Chit business', 'groups', 'Chit groups you run: members, draws, collection day, your commission'],
+  ['emi', 'EMIs', 'credit_card', 'Card and loan EMIs with interest and GST worked out'],
+  ['lend', 'Lending & borrowing', 'handshake', 'People who owe you money and people you owe']
+];
+const FEAT_NEW_USER = { family: false, chits: false, emi: true, lend: true };
+const featPrefs = () => D.prefs.find(p => p.id === 'features');
+const featOn = k => { const f = featPrefs(); return !f || f[k] !== false; };
+// which feature each page belongs to (pages not listed are always on)
+const FEAT_OF = { chits: 'chits', chit: 'chits', collect: 'chits', people: 'lend', person: 'lend', emis: 'emi', emi: 'emi', mother: 'family', homecosts: 'family' };
+const pageOn = id => !FEAT_OF[id] || featOn(FEAT_OF[id]);
+
 function navMiddle() {
-  const ids = (lsGet('exsy.nav', null) || NAV_DEFAULT).filter(id => NAV_CHOICES.some(c => c.id === id)).slice(0, NAV_MAX);
-  return ids.length ? ids : NAV_DEFAULT;
+  const ok = id => NAV_CHOICES.some(c => c.id === id) && pageOn(id);
+  const want = lsGet('exsy.nav', null) || NAV_DEFAULT, ids = want.filter(ok).slice(0, NAV_MAX);
+  const fill = ids.length < Math.min(want.length, NAV_MAX) ? NAV_FILL.filter(id => ok(id) && !ids.includes(id)) : [];
+  return [...ids, ...fill].slice(0, NAV_MAX);
 }
-const navItems = () => [{ id: 'home', label: 'Home', icon: 'home' }, ...navMiddle().map(id => NAV_CHOICES.find(c => c.id === id)), { id: 'more', label: 'More', icon: 'menu' }];
+// the family-money tab is named after the person, e.g. "Mother"
+const navChoice = id => { const c = NAV_CHOICES.find(n => n.id === id); return c && id === 'mother' && homePayer() ? { ...c, label: payerName() } : c; };
+const navItems = () => [{ id: 'home', label: 'Home', icon: 'home' }, ...navMiddle().map(navChoice), { id: 'more', label: 'More', icon: 'menu' }];
 // detail pages light up the tab they belong to, when that tab is in the bar
 const NAV_PARENT = { chit: 'chits', person: 'people', account: 'accounts', emi: 'emis', homecosts: 'mother', collect: 'chits', calendar: 'txns', budgets: 'home' };
 function activeTab(p) {

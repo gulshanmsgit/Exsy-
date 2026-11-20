@@ -11,12 +11,13 @@ const homePrefs = () => D.prefs.find(p => p.id === 'home') || {};
 const saveHomePrefs = patch => save('prefs', { ...homePrefs(), id: 'home', ...patch });
 // Book whose money pays for the home: '' = nobody (just track), unset = the book called Mother
 function homePayer() {
+  if (!featOn('family')) return null;          // feature switched off: no claims, no family page
   const id = homePrefs().payerBook;
   if (id === '') return null;
   if (id && D.books.some(b => b.id === id)) return id;
   return (D.books.find(b => /mother|amma|mom/i.test(b.name)) || {}).id || null;
 }
-const payerName = () => X().book.get(homePayer())?.name || 'Mother';
+const payerName = () => X().book.get(homePayer())?.name || 'Family';
 // Monthly money: ONE setting { from: first month of money, amount }. Saving replaces it.
 // (Older versions kept a list in `salary`; the latest-starting entry was the corrected one.)
 function monthlyPlan() {
@@ -30,6 +31,7 @@ const paidNextMonth = () => homePrefs().arrears !== false;
 const payDay = () => clamp(+homePrefs().salaryDay || 1, 1, 28);
 const payDateFor = workMonth => `${paidNextMonth() ? addMonths(workMonth, 1) : workMonth}-${pad(payDay())}`;
 // Entries are counted from here (older ones were settled before Exsy); independent of the monthly money
+// (new money books save their start date here during setup; '2026-10-01' is the owner's original start)
 const homeSince = () => homePrefs().since || '2026-10-01';
 const claimApplies = (accountId, forWhom) => { const p = homePayer(), b = X().acc.get(accountId)?.bookId; return !!p && forWhom === 'home' && !!b && b !== p; };
 const isHomeClaim = t => t.type === 'expense' && t.homeClaim !== false && t.date >= homeSince() && claimApplies(t.accountId, t.forWhom);
@@ -81,7 +83,7 @@ function balanceText(L, name) {
 }
 function pageMother() {
   const x = X(), L = motherLedger(), name = payerName();
-  if (!L.mom) return { title: 'Mother’s money', back: '#/more', fab: false, body: `<div class="card"><p>Choose whose money pays for the home:</p>${payerChips(null)}</div>` };
+  if (!L.mom) return { title: 'Family money', back: '#/more', fab: false, body: `<div class="card"><p>Choose the family member whose money pays for the home (for example a parent who gives a fixed amount every month):</p>${payerChips(null)}</div>` };
   const bt = balanceText(L, name), k = thisMonth(), m = L.months.get(k) || { salary: 0, salaryFor: [], home: 0, given: 0, got: 0 };
   const plan = monthlyPlan(), shortMon = w => MON[+w.slice(5, 7) - 1], ab = autoBackCfg();
   const stmt = [...L.months].sort((a, b) => b[0].localeCompare(a[0]));

@@ -71,11 +71,11 @@ function pageMore() {
   const body = `<div class="card flush">
       ${item('#/accounts', 'account_balance', 'Accounts & books', `${D.books.length} books · ${D.accounts.filter(a => !a.archived).length} accounts`)}
       ${item('#/reports', 'bar_chart', 'Reports', 'Monthly and yearly spending, shops, for whom')}
-      ${item('#/mother', 'house', homePayer() ? `${payerName()}’s money & home costs` : 'Home costs', homePayer() ? (() => { const b = motherLedger().balance; return b >= 0 ? `${inr(b)} of ${payerName()}’s money with you` : `${payerName()} owes you ${inr(-b)}`; })() : 'Choose whose money pays for the home')}
+      ${!featOn('family') ? '' : item('#/mother', 'house', homePayer() ?`${payerName()}’s money & home costs` : 'Home costs', homePayer() ? (() => { const b = motherLedger().balance; return b >= 0 ? `${inr(b)} of ${payerName()}’s money with you` : `${payerName()} owes you ${inr(-b)}`; })() : 'Choose whose money pays for the home')}
       ${item('#/budgets', 'savings', 'Budget', num(budgetPrefs().total) ? `${inr(spendIn(thisMonth()))} of ${inr(budgetPrefs().total)} this month ${mood(spendIn(thisMonth()), num(budgetPrefs().total), thisMonth()).emoji}` : 'Set a monthly limit – see 😊 or 😱 on Home')}
-      ${item('#/emis', 'credit_card', 'EMIs', emiItems().length ? `${emiItems().filter(e => !e.closed && emiPaidCount(e) < emiSchedule(e).rows.length).length} running · monthly bill with GST worked out` : 'Card / loan EMIs with interest and GST worked out')}
+      ${!featOn('emi') ? '' : item('#/emis', 'credit_card', 'EMIs', emiItems().length ? `${emiItems().filter(e => !e.closed && emiPaidCount(e) < emiSchedule(e).rows.length).length} running · monthly bill with GST worked out` : 'Card / loan EMIs with interest and GST worked out')}
       ${item('#/calendar', 'calendar_month', 'Calendar', 'What was spent on each day')}
-      ${item('#/collect', 'event_available', 'Chit collection day', 'Everyone who still has to pay, most overdue first')}
+      ${!featOn('chits') ? '' : item('#/collect', 'event_available', 'Chit collection day', 'Everyone who still has to pay, most overdue first')}
       ${item('', 'bolt', 'Quick buttons', `${quickItems().length} one-tap entries on Home`, 'data-act="quickEdit"')}
       ${item('#/recurring', 'event_repeat', 'Monthly bills & salary', `${D.recurring.length} reminders`)}
       ${item('#/cats', 'category', 'Categories & shops', `${D.categories.length} categories · ${D.stores.length} shops`)}
@@ -83,8 +83,9 @@ function pageMore() {
     <div class="section-head" style="margin-top:16px"><h2>Settings</h2></div>
     <div class="card flush">
       ${item('#/sync', isAccountMode() ? 'account_circle' : store.kind === 'cloud' ? 'cloud_done' : 'phone_android', isAccountMode() ? 'Account & devices' : 'Sync & devices', isAccountMode() ? `Signed in as ${esc(authUser?.email || '')}` : store.kind === 'cloud' ? 'Synced with a sync code – or sign in with Google' : 'Saved on this device only – sign in with Google to sync')}
-      ${item('', 'tune', 'Edit Home', 'Show, hide and reorder the cards on Home', 'data-act="editHome"')}
-      ${item('', 'menu', 'Bottom bar', `Home · ${navMiddle().map(id => NAV_CHOICES.find(c => c.id === id).label).join(' · ')} · More`, 'data-act="editNav"')}
+      ${item('', 'widgets', 'Features', `On: ${FEATURES.filter(([k]) => featOn(k)).map(f => f[1]).join(', ') || 'only the basics'}`, 'data-act="editFeatures"')}
+      ${item('', 'tune', 'Edit Home','Show, hide and reorder the cards on Home', 'data-act="editHome"')}
+      ${item('', 'menu', 'Bottom bar', `Home · ${navMiddle().map(id => navChoice(id).label).join(' · ')} · More`, 'data-act="editNav"')}
       ${item('', 'vibration', lsGet('exsy.buzz', true) ? 'Vibration is on' : 'Vibration is off', 'Short buzz when you save, swipe or draw a winner', 'data-act="buzzToggle"')}
       ${item('', privacyOn() ? 'visibility_off' : 'visibility', privacyOn() ? 'Amounts are hidden' : 'Hide amounts', 'Blur all money figures – also the eye icon at the top', 'data-act="privacy"')}
       ${item('', hasPin ? 'lock' : 'lock_open', hasPin ? 'App lock is on' : 'App lock (PIN)', hasPin ? 'Tap to change or remove the PIN' : 'Ask for a 4-digit PIN when the app opens', 'data-act="pin"')}
@@ -196,7 +197,7 @@ function openCatForm(id) {
 function pageRecurring() {
   const x = X(), k = thisMonth();
   const list = D.recurring.slice().sort((a, b) => (+a.day || 0) - (+b.day || 0));
-  const body = `<p class="muted" style="margin:0 4px 12px">Reminders for things that happen every month – salary into ICICI, electricity bill, recharge, rent, EMI. They show on Home a few days before the date; tap “Add” to record them in one tap.</p>
+  const body = `<p class="muted" style="margin:0 4px 12px">Reminders for things that happen every month – salary into your bank, electricity bill, recharge, rent, EMI. They show on Home a few days before the date; tap “Add” to record them in one tap.</p>
     <div class="card flush">${list.map(r => {
       const done = r.lastDone === k;
       return `<div class="li"><button class="li" style="padding:0;border:0;flex:1;min-width:0" data-act="editRecurring" data-id="${r.id}">
@@ -240,7 +241,7 @@ function renderWelcome() {
   const hasCfg = !!(FIREBASE_CONFIG || lsGet(LS.cfg, null));
   app.innerHTML = `<div class="center-screen"><img src="icons/icon-192.png" alt="">
     <h1>Exsy · Money Book</h1>
-    <p class="muted" style="text-align:center;max-width:440px">Your money, your mother’s and father’s money, cash and bank, people who owe you, and your chit business – in one place.</p>
+    <p class="muted" style="text-align:center;max-width:440px">Your cash and bank accounts, your family’s money, people who owe you, EMIs and chits – in one place.</p>
     <div class="welcome">
       ${hasCfg ? `<div class="card" style="text-align:center">${googleBtn()}<p class="muted" style="margin-top:10px;font-size:13px">Private to your Google account · same money book on all your devices</p></div>` : ''}
       <button class="card choice" data-act="startLocal">${ic('phone_android')}<div><h3>Start on this device</h3><p>Begin right away. You can turn on sync later and everything is copied.</p></div></button>
@@ -248,22 +249,94 @@ function renderWelcome() {
       <p class="muted" style="text-align:center;font-size:13px">Got a device link? Just open it – you will be signed in automatically.</p>
     </div></div>`;
 }
+/* Setup for a new person: pick accounts, features and family members. The choices are kept in setupDraft so a
+   re-render (e.g. a sync update) does not wipe what was ticked. */
+const SETUP_ACCS = [['cash', 'Cash', 'payments'], ['bank', 'Bank account', 'account_balance'], ['bank2', 'Second bank account', 'account_balance'],
+  ['card', 'Credit card', 'credit_card'], ['invest', 'Investments (MF / stocks)', 'trending_up']];
+const SETUP_FAMILY = ['Mother', 'Father', 'Spouse'];
+let setupDraft = null;
+const tick = (name, value, label, on, icon) => `<label class="chip"><input type="checkbox" name="${name}" value="${esc(value)}" ${on ? 'checked' : ''}><span>${icon ? ic(icon) : ''}${esc(label)}</span></label>`;
 function renderSetup() {
+  const d = setupDraft || (setupDraft = { acc: ['cash', 'bank'], feat: Object.keys(FEAT_NEW_USER).filter(k => FEAT_NEW_USER[k]), fam: [], bankName: '', famOther: '' });
   app.innerHTML = `<div class="center-screen"><img src="icons/icon-192.png" alt="">
     <h1>Set up your money book</h1>
-    <div class="welcome">
-      <div class="card"><div class="card-title">${ic('auto_awesome')}Ready-made start</div>
-        <div class="kv"><span>Me</span><b>Cash, SBI, Canara Bank, ICICI (salary), Credit card, Groww</b></div>
-        <div class="kv"><span>Mother</span><b>Cash, Bank account</b></div>
-        <div class="kv"><span>Father</span><b>Cash</b></div>
-        <div class="kv"><span>Categories</span><b>${DEFAULT_CATS.length + DEFAULT_INCOME.length} (groceries, milk, medical, bills…)</b></div>
-        <div class="kv"><span>Shops</span><b>DMart, Amazon, Flipkart, kirana…</b></div>
-        <p class="muted" style="margin-top:8px">You can rename, add or remove anything later.</p>
-        <div class="btn-row" style="margin-top:12px"><button class="btn filled" data-act="setupDefaults">${ic('check')}Create my money book</button></div></div>
-      <button class="card choice" data-act="sample">${ic('science')}<div><h3>Try it with sample data first</h3><p>Adds example entries, people and a running chit. Erase it any time from More.</p></div></button>
-      ${store.kind === 'cloud' ? `<p class="muted" style="text-align:center">Already used Exsy on another device with this code? Wait a moment – your data is still syncing.</p>` : ''}
-    </div></div>`;
+    <form class="welcome" id="setup" autocomplete="off">
+      <div class="card"><div class="card-title">${ic('account_balance_wallet')}Where do you keep money?</div>
+        <div class="chips">${SETUP_ACCS.map(([k, l, i]) => tick('acc', k, l, d.acc.includes(k), i)).join('')}</div>
+        <div class="${d.acc.includes('bank') ? '' : 'hide'}" id="su-bank" style="margin-top:12px">${field('Name of your bank (optional)', `<input name="bankName" value="${esc(d.bankName)}" placeholder="e.g. SBI, HDFC, ICICI">`)}</div>
+        <p class="muted" style="margin-top:8px">You type today’s balance for each one on the next screen.</p></div>
+      <div class="card"><div class="card-title">${ic('widgets')}What will you use Exsy for?</div>
+        <p class="muted" style="margin-bottom:8px">Daily spending, budgets and reports are always on.</p>
+        <div class="chips">${FEATURES.map(([k, l, i]) => tick('feat', k, l, d.feat.includes(k), i)).join('')}</div>
+        <p class="muted" style="margin-top:8px">Change this any time in More → Features.</p></div>
+      <div class="card ${d.feat.includes('family') ? '' : 'hide'}" id="su-fam"><div class="card-title">${ic('groups')}Whose money do you look after?</div>
+        <div class="chips">${SETUP_FAMILY.map(n => tick('fam', n, n, d.fam.includes(n), 'person')).join('')}</div>
+        <div style="margin-top:12px">${field('Others (optional, separate with commas)', `<input name="famOther" value="${esc(d.famOther)}" placeholder="e.g. Grandmother, Brother">`)}</div>
+        <p class="muted" style="margin-top:8px">Each person gets their own Cash and Bank account, so their money never mixes with yours.</p></div>
+      <div class="btn-row" style="justify-content:center"><button class="btn filled" type="submit">${ic('check')}Create my money book</button></div>
+      <button type="button" class="card choice" data-act="sample">${ic('science')}<div><h3>Just looking? Try it with sample data</h3><p>Adds example accounts, entries, people and a running chit. Erase it any time from More.</p></div></button>
+      ${store.kind === 'cloud' ? `<p class="muted" style="text-align:center">Already used Exsy on another device? Wait a moment – your data is still syncing.</p>` : ''}
+    </form></div>`;
+  const form = app.querySelector('#setup');
+  const keep = () => {
+    const fd = new FormData(form);
+    setupDraft = { acc: fd.getAll('acc'), feat: fd.getAll('feat'), fam: fd.getAll('fam'), bankName: fd.get('bankName') || '', famOther: fd.get('famOther') || '' };
+    form.querySelector('#su-bank').classList.toggle('hide', !setupDraft.acc.includes('bank'));
+    form.querySelector('#su-fam').classList.toggle('hide', !setupDraft.feat.includes('family'));
+  };
+  form.oninput = keep; form.onchange = keep;
+  form.onsubmit = e => { e.preventDefault(); keep(); setupNewBook(setupDraft); setupDraft = null; snack('Your money book is ready – now type today’s balance in each account'); go('#/accounts'); };
 }
+function setupNewBook(d) {
+  if (D.books.length) return;
+  saveFeatures(Object.fromEntries(FEATURES.map(([k]) => [k, d.feat.includes(k)])), true);
+  save('prefs', { ...homePrefs(), id: 'home', since: today() });   // family money is counted from today
+  const acc = (bookId, name, type, order) => save('accounts', { bookId, name, type, order, opening: 0, openingDate: today() });
+  const me = save('books', { name: 'Me', primary: true, order: 0 });
+  const names = { cash: 'Cash', bank: d.bankName.trim() || 'Bank account', bank2: 'Second bank account', card: 'Credit card', invest: 'Investments' };
+  const types = { cash: 'cash', bank: 'bank', bank2: 'bank', card: 'card', invest: 'invest' };
+  const picked = SETUP_ACCS.map(a => a[0]).filter(k => d.acc.includes(k));
+  (picked.length ? picked : ['cash']).forEach((k, i) => acc(me.id, names[k], types[k], i));
+  if (d.feat.includes('family')) {
+    const people = [...new Set([...d.fam, ...d.famOther.split(',').map(s => s.trim()).filter(Boolean)])];
+    people.forEach((name, i) => { const b = save('books', { name, order: i + 1 }); acc(b.id, 'Cash', 'cash', 0); acc(b.id, 'Bank account', 'bank', 1); });
+  }
+  DEFAULT_CATS.forEach(([name, icon]) => save('categories', { name, icon, kind: 'expense' }));
+  DEFAULT_INCOME.forEach(([name, icon]) => save('categories', { name, icon, kind: 'income' }));
+  DEFAULT_STORES.forEach(([name, icon]) => save('stores', { name, icon }));
+}
+// saved choice of features; newUser = made by the setup screen (shows the Getting started card on Home)
+function saveFeatures(patch, newUser) {
+  const cur = featPrefs() || { ...Object.fromEntries(FEATURES.map(([k]) => [k, true])) };
+  save('prefs', { ...cur, id: 'features', ...(newUser ? { newUser: true } : {}), ...patch });
+}
+
+/* ---------- Home: Getting started (only for books made with the setup screen, until done or hidden) ---------- */
+function startCard() {
+  const f = featPrefs();
+  if (!f || !f.newUser || f.guideDone) return '';
+  const steps = [
+    [D.accounts.some(a => num(a.opening)), 'Type today’s balance in each account', '#/accounts'],
+    [D.txns.length > 0, 'Add your first entry', '#/txns'],
+    [num(budgetPrefs().total) > 0, 'Set a monthly budget', '#/budgets'],
+    [isAccountMode() || store.kind === 'cloud', 'Sign in with Google to keep a safe copy online', '#/sync']
+  ];
+  const done = steps.filter(s => s[0]).length;
+  return `<div class="card flush"><div class="card-title" style="padding:4px 16px 0">${ic('flag')}<span style="flex:1">Getting started · ${done} of ${steps.length}</span><button class="btn text sm" data-act="guideDone">Hide</button></div>
+    ${steps.map(([ok, label, href]) => `<a class="li" href="${href}"><span class="avatar">${ic(ok ? 'check_circle' : 'radio_button_unchecked')}</span><span class="li-text"><span class="li-title" ${ok ? 'style="text-decoration:line-through;opacity:.6"' : ''}>${label}</span></span>${ic('chevron_right', 'muted')}</a>`).join('')}</div>`;
+}
+
+/* ---------- More → Features ---------- */
+function openFeatures() {
+  const s = openSheet(`${sheetHead('Features')}
+    <p class="lead">Switch on only what you use. Switching one off just hides it – nothing is deleted, and switching it back on brings everything back.</p>
+    <div class="card flush" style="margin-top:12px">${FEATURES.map(([k, n, i, sub]) => `<label class="li static"><span class="avatar">${ic(i)}</span><span class="li-text"><span class="li-title">${n}</span><span class="li-sub">${sub}</span></span>
+      <span class="switch-row" style="padding:0 4px"><input type="checkbox" data-feat="${k}" ${featOn(k) ? 'checked' : ''} aria-label="${n}"></span></label>`).join('')}</div>
+    <div class="sheet-actions"><button class="btn filled" data-act="closeSheet">${ic('check')}Done</button></div>`);
+  $$('[data-feat]', s).forEach(cb => cb.onchange = () => { saveFeatures({ [cb.dataset.feat]: cb.checked }); scheduleRender(); });
+}
+
+// Sample data and older "ready-made start": the full example set of books and accounts
 function setupDefaults() {
   if (D.books.length) return;
   const me = save('books', { name: 'Me', primary: true, order: 0 });
@@ -454,6 +527,8 @@ const ACT = {
   shareEmi: d => shareEmi(d.id),
   editHome: () => openHomeEdit(),
   editNav: () => openNavEdit(),
+  editFeatures: () => openFeatures(),
+  guideDone: () => { saveFeatures({ guideDone: true }); scheduleRender(); },
   budSave: () => { const v = evalAmount($('#bud-total').value); saveBudgetPrefs({ total: v > 0 ? v : 0 }); buzz(); snack(v > 0 ? `Monthly budget ${inr(v)}` : 'Monthly budget removed'); },
   budScope: d => saveBudgetPrefs({ scope: d.b }),
   budCat: d => openCatBudget(d.id),
@@ -607,7 +682,7 @@ document.addEventListener('visibilitychange', () => {
 /* ---------- More → Bottom bar: choose the 3 tabs between Home and More ---------- */
 function openNavEdit() {
   const cur = navMiddle();
-  const list = [...cur.map(id => NAV_CHOICES.find(c => c.id === id)), ...NAV_CHOICES.filter(c => !cur.includes(c.id))];
+  const list = [...cur.map(navChoice), ...NAV_CHOICES.filter(c => !cur.includes(c.id) && pageOn(c.id)).map(c => navChoice(c.id))];
   const s = openSheet(`${sheetHead('Bottom bar')}
     <p class="lead">Pick ${NAV_MAX} tabs to show between <b>Home</b> and <b>More</b>, in this order. Everything else stays in More.</p>
     <div class="card flush" style="margin-top:12px">${list.map(c => {

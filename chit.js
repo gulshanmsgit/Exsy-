@@ -188,14 +188,16 @@ function chitDraws(ci) {
 
 /* ---------- chit forms ---------- */
 function openChitForm(id) {
-  const ch = D.chits.find(c => c.id === id) || { monthly: 5000, commission: 2500, dueDay: 10, startMonth: thisMonth() };
+  // a new chit starts from the last chit's amounts (organisers usually repeat them); first chit: no commission filled in
+  const last = D.chits[D.chits.length - 1];
+  const ch = D.chits.find(c => c.id === id) || { monthly: last ? last.monthly : 5000, commission: last ? last.commission : '', dueDay: last ? last.dueDay : 10, startMonth: thisMonth() };
   const ci = id ? chitInfo(ch) : null;
   const s = openSheet(`<form id="cf">${sheetHead(id ? 'Edit chit' : 'New chit group', id ? `<button type="button" class="icon-btn" id="cf-del" aria-label="Delete">${ic('delete')}</button>` : '')}
     <div class="sheet-body">
       ${field('Chit name', `<input name="name" value="${esc(ch.name || '')}" placeholder="e.g. Oct 2026 – 60k chit" required>`)}
       <div class="grid2">
         ${field('Monthly amount (each member)', `<input name="monthly" inputmode="decimal" value="${esc(ch.monthly)}" required>`)}
-        ${field('Your commission per draw', `<input name="commission" inputmode="decimal" value="${esc(ch.commission)}">`)}
+        ${field('Your commission per draw', `<input name="commission" inputmode="decimal" value="${esc(ch.commission ?? '')}" placeholder="e.g. 5% of the pot">`)}
         ${field('First month', `<input type="month" name="startMonth" value="${esc(ch.startMonth)}" required>`)}
         ${field('Pay by (day of month)', `<input type="number" name="dueDay" min="1" max="31" value="${esc(ch.dueDay)}">`)}
       </div>

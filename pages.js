@@ -24,7 +24,9 @@ function renderEntry(f) {
   const x = X(), editing = !!f.id, ty = f.type;
   const isCat = ty === 'expense' || ty === 'income';
   const cats = D.categories.filter(c => c.kind === (ty === 'income' ? 'income' : 'expense'));
-  const types = ['expense', 'income', 'transfer', 'lend', 'collect', 'borrow', 'repay'];
+  // lending types only when Lending & borrowing is on (an old lending entry being edited keeps its type)
+  const lendOn = featOn('lend');
+  const types = ['expense', 'income', 'transfer', 'lend', 'collect', 'borrow', 'repay'].filter(t => lendOn || !PERSON_T.has(t) || t === ty);
   const people = D.people.slice().sort(byName);
   const s = openSheet(`<form id="ef" autocomplete="off">
     ${sheetHead(editing ? 'Edit entry' : 'New entry', editing ? `<button type="button" class="icon-btn" id="ef-del" aria-label="Delete">${ic('delete')}</button>`
@@ -41,7 +43,7 @@ function renderEntry(f) {
     ${ty === 'transfer' ? `<div class="form-label">To</div>${accChips('toAccountId', f.toAccountId)}` : ''}
     ${ty === 'expense' ? `<div class="form-label">For whom</div>
       <div class="chips">${chip('forWhom', 'home', 'Home', f.forWhom === 'home', 'home')}${booksSorted().map(b => chip('forWhom', b.id, b.name, f.forWhom === b.id, 'person')).join('')}
-        ${people.map(p => chip('forWhom', 'p:' + p.id, p.name, f.forWhom === 'p:' + p.id, 'handshake')).join('')}${chip('forWhom', 'p:__new', 'New person', f.forWhom === 'p:__new', 'person_add')}</div>
+        ${lendOn ? people.map(p => chip('forWhom', 'p:' + p.id, p.name, f.forWhom === 'p:' + p.id, 'handshake')).join('') + chip('forWhom', 'p:__new', 'New person', f.forWhom === 'p:__new', 'person_add') : ''}</div>
       <label class="field ${f.forWhom === 'p:__new' ? '' : 'hide'}" id="ef-fw-new" style="margin-top:8px"><span>Person’s name</span><input name="forNewPerson" value="${esc(f.forNewPerson || '')}" placeholder="e.g. Ravi, Cousin Priya"></label>
       <label class="switch-row claim-row ${String(f.forWhom || '').startsWith('p:') ? '' : 'hide'}" id="ef-payback"><span><span>They will pay me back</span><small>Saved as money lent to them – shows in People with what they owe</small></span>
         <input type="checkbox" name="payBack" ${(f.payBack ?? !f.id) ? 'checked' : ''}></label>
@@ -242,7 +244,7 @@ function attention(x) {
 
 /* Home is a list of cards the owner can hide and reorder (Edit Home); the layout is kept per device */
 const HOME_CARDS = [
-  ['mood', 'Budget mood', 'savings'], ['quick', 'Quick buttons', 'bolt'], ['total', 'Total money', 'account_balance_wallet'],
+  ['start', 'Getting started', 'flag'], ['mood', 'Budget mood', 'savings'], ['quick', 'Quick buttons', 'bolt'], ['total', 'Total money', 'account_balance_wallet'],
   ['attention', 'Needs attention', 'notifications'], ['trend', 'Spending trend', 'insights'], ['balances', 'Where the money is', 'payments'],
   ['spending', 'Spending this month', 'pie_chart'], ['owe', 'People who owe', 'handshake'], ['recent', 'Recent entries', 'receipt_long'],
   ['paste', 'Paste SMS button', 'content_paste']
@@ -258,6 +260,7 @@ function pageHome() {
   const accs = D.accounts.filter(a => !a.archived && books.some(b => b.id === a.bookId));
   const byType = t => sum(accs.filter(a => a.type === t), a => accValue(a, x));
   const parts = {
+    start: () => startCard(),
     mood: () => moodCard(),
     quick: () => quickRow(),
     paste: () => `<div class="btn-row"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>`,
@@ -289,6 +292,7 @@ function pageHome() {
           ${a.btn ? `<button class="btn tonal sm" ${a.act}>${a.btn}</button>` : ic('chevron_right', 'muted')}</${a.go ? 'a' : 'div'}>`).join('')}</div>` : '';
     },
     owe: () => {
+      if (!featOn('lend')) return '';
       const owedToMe = sum(D.people, p => Math.max(0, x.owes.get(p.id) || 0)), iOwe = sum(D.people, p => Math.max(0, -(x.owes.get(p.id) || 0)));
       return owedToMe || iOwe ? `<a class="card" href="#/people" style="display:block;color:inherit"><div class="stats">
         <div class="stat"><span>Others owe you</span><b class="owe">${inr(owedToMe)}</b></div>
