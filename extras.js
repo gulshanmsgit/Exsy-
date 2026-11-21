@@ -116,7 +116,7 @@ function addQuick(t) {
 }
 function quickRow() {
   const items = quickItems();
-  if (!items.length) return `<p class="muted quick-hint">${ic('bolt', 'sm')} Tip: tick “Also add as a quick button” when saving an entry – next time it is one tap.</p>`;
+  if (!items.length) return lsGet('exsy.quickTipSeen', false) ? '' : `<div class="card quick-hint">${ic('bolt', 'sm')}<span style="flex:1">Tip: tick “Also add as a quick button” when saving an entry – next time it is one tap.</span><button class="btn text sm" data-act="quickTipSeen">Got it</button></div>`;
   return `<div class="quick-row">${items.map((q, i) => `<button class="quick" data-act="quickUse" data-i="${i}" title="Save ${esc(q.label)} for today">
       <span class="avatar" style="--c:${q.type === 'income' ? '#12804a' : colorFor(q.label)}">${ic(q.icon || 'bolt')}</span><span class="quick-text"><b>${esc(q.label)}</b><small>${q.amount ? inr(q.amount) : 'ask amount'}</small></span></button>`).join('')}
     <button class="quick ghost" data-act="quickEdit" aria-label="Edit quick buttons">${ic('edit')}</button></div>`;

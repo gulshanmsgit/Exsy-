@@ -553,6 +553,8 @@ const ACT = {
   editHome: () => openHomeEdit(),
   editNav: () => openNavEdit(),
   editFeatures: () => openFeatures(),
+  txFilters: () => setUI('txFilters', UI.txFilters ? '' : '1'),
+  quickTipSeen: () => { lsSet('exsy.quickTipSeen', true); render(); },
   deleteAccount: () => deleteAccountStart(),
   // legal pages live on the website (the Android app opens them in the phone's browser)
   openPage: d => window.open(SITE_INFO.website + d.page, '_blank', 'noopener'),

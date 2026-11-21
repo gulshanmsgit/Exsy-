@@ -124,7 +124,10 @@ h1, h2, h3, p { margin: 0; }
 /* ---------- hero numbers ---------- */
 .hero-label { font-size: 13px; letter-spacing: .3px; opacity: .85; }
 .hero-num { font-size: 36px; line-height: 44px; font-weight: 400; font-variant-numeric: tabular-nums; margin: 2px 0 12px; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; container-type: inline-size; }
+/* two tiles per row (phones): an odd last tile takes the whole row instead of sitting alone on the left */
+@container (max-width: 399px) { .stats > :last-child:nth-child(odd):not(:first-child) { grid-column: 1 / -1; } }
+.check-btn { flex: none; margin-right: 4px; }
 .stat { background: color-mix(in srgb, var(--surface) 55%, transparent); border-radius: 12px; padding: 10px 12px; min-width: 0; }
 .card:not(.primary):not(.tert) .stat { background: var(--sc-high); }
 .stat b { display: block; font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -348,7 +351,7 @@ body { overscroll-behavior-y: contain; }
 .quick-text b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .quick-text small { font-size: 12px; color: var(--on-surface-variant); }
 .quick.ghost { padding: 8px 14px; color: var(--on-surface-variant); }
-.quick-hint { display: flex; align-items: center; gap: 6px; font-size: 13px; margin: 10px 4px 0; }
+.quick-hint { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 10px 0 0; padding: 10px 8px 10px 16px; color: var(--on-surface-variant); }
 .plain-input { border: 0; border-bottom: 1px solid var(--outline-variant); background: none; font-size: 16px; padding: 2px 0; width: 100%; outline: none; }
 .plain-input:focus { border-bottom: 2px solid var(--primary); }
 .swipe { position: relative; overflow: hidden; touch-action: pan-y; }

@@ -264,7 +264,7 @@ function pageHome() {
     start: () => startCard(),
     mood: () => moodCard(),
     quick: () => quickRow(),
-    paste: () => `<div class="btn-row"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>`,
+    paste: () => `<div class="btn-row" style="justify-content:center"><button class="btn tonal" data-act="paste">${ic('content_paste')}Paste bank SMS / UPI message</button></div>`,
     balances: () => balancesCard(x, accs),
     trend: () => trendCard(),
     total: () => {
@@ -278,8 +278,8 @@ function pageHome() {
           <a class="stat" href="#/accounts"><span>Bank</span><b>${inr(byType('bank') + byType('wallet'))}</b></a>
           ${accs.some(a => a.type === 'invest') ? `<a class="stat" href="#/accounts"><span>Invested</span><b>${inr(byType('invest'))}</b></a>` : ''}
           ${accs.some(a => a.type === 'card') ? `<a class="stat" href="#/accounts"><span>Card due</span><b>${inr(-byType('card'))}</b></a>` : ''}
-          ${bookTiles}
         </div>
+        ${bookTiles && booksSorted().length > 1 ? `<div class="hero-label" style="margin:12px 0 6px">Whose money</div><div class="stats">${bookTiles}</div>` : ''}
         ${chitHeld > 0 ? `<div class="hero-label" style="margin-top:10px">${ic('info', 'sm')} Includes ${inr(chitHeld)} chit money you are holding</div>` : ''}
         ${motherHeroLine()}
       </div>`;
@@ -360,24 +360,33 @@ function pageTxns() {
   const out = sum(list.filter(t => t.type === 'expense'), t => t.amount), inc = sum(list.filter(t => t.type === 'income'), t => t.amount);
   const sel = (key, opts, label) => `<select class="filter ${UI[key] ? 'on' : ''}" data-ui="${key}" aria-label="${label}"><option value="">${label}</option>${opts.map(([v, l]) => `<option value="${esc(v)}" ${UI[key] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const anyFilter = UI.txType || UI.txCat || UI.txAcc || UI.txStore;
+  // filters fold away behind one button; the count includes a chosen book (Me / Mother …)
+  const nFilt = [UI.txType, UI.txCat, UI.txAcc, UI.txStore].filter(Boolean).length + (UI.book && UI.book !== 'all' ? 1 : 0);
+  const filtOpen = !!UI.txFilters;
+  // swipe hint: shown on the first few visits only
+  const swipeSeen = +lsGet('exsy.swipeHint', 0);
+  if (!pageTxns.counted) { pageTxns.counted = true; lsSet('exsy.swipeHint', swipeSeen + 1); }
   const body = `
     <div class="search">${ic('search')}<input id="q" data-ui="q" type="search" placeholder="Search entries, notes, amounts" value="${esc(UI.q)}"></div>
     <div class="filters">
       ${k === 'all' ? `<button class="chip" data-act="txMonthThis">${ic('calendar_month')}All time</button>` : monthNav('txMonth', k, fmtMonth(k)) + `<button class="chip" data-act="txMonthAll">All time</button>`}
+      <button class="btn ${nFilt ? 'tonal' : 'outlined'} sm" style="margin-left:auto" data-act="txFilters" aria-expanded="${filtOpen}">${ic('tune', 'sm')}Filters${nFilt ? ` (${nFilt})` : ''}</button>
     </div>
-    <div class="filters">
-      ${sel('txType', [...Object.entries(TT).filter(([t]) => !PERSON_T.has(t)).map(([t, v]) => [t, v.label]), ['people', 'Lending / borrowing']], 'Type')}
-      ${sel('txCat', D.categories.slice().sort(byName).map(c => [c.id, c.name]), 'Category')}
-      ${sel('txStore', D.stores.slice().sort(byName).map(s => [s.id, s.name]), 'Shop')}
-      ${sel('txAcc', booksSorted().flatMap(b => accsOf(b.id, true).map(a => [a.id, `${a.name} · ${b.name}`])), 'Account')}
-      ${anyFilter ? `<button class="btn text sm" data-act="clearFilters">${ic('filter_alt_off')}Clear</button>` : ''}
+    <div class="${filtOpen ? '' : 'hide'}">
+      <div class="filters">
+        ${sel('txType', [...Object.entries(TT).filter(([t]) => !PERSON_T.has(t)).map(([t, v]) => [t, v.label]), ['people', 'Lending / borrowing']], 'Type')}
+        ${sel('txCat', D.categories.slice().sort(byName).map(c => [c.id, c.name]), 'Category')}
+        ${sel('txStore', D.stores.slice().sort(byName).map(s => [s.id, s.name]), 'Shop')}
+        ${sel('txAcc', booksSorted().flatMap(b => accsOf(b.id, true).map(a => [a.id, `${a.name} · ${b.name}`])), 'Account')}
+        ${anyFilter ? `<button class="btn text sm" data-act="clearFilters">${ic('filter_alt_off')}Clear</button>` : ''}
+      </div>
+      ${bookFilterChips().replace('chips scroll', 'chips scroll" style="margin-top:12px')}
     </div>
-    ${bookFilterChips().replace('chips scroll', 'chips scroll" style="margin-top:12px')}
     <div class="card" style="margin-top:12px"><div class="stats">
       <div class="stat"><span>Spent</span><b>${inr(out)}</b></div>
       <div class="stat"><span>Income</span><b class="pos">${inr(inc)}</b></div>
       <div class="stat"><span>Entries</span><b>${list.length}</b></div></div></div>
-    <p class="muted swipe-hint">${ic('swap_horiz', 'sm')}Swipe an entry left to delete, right to copy it to today.</p>
+    ${swipeSeen < 3 ? `<p class="muted swipe-hint">${ic('swap_horiz', 'sm')}Swipe an entry left to delete, right to copy it to today.</p>` : '<div style="height:12px"></div>'}
     <div class="card flush">${txList(list, x, { empty: q || anyFilter ? 'Nothing matches these filters' : 'No entries in this period' })}</div>`;
   return { title: 'Entries', body, actions: `<a class="icon-btn" href="#/calendar" title="Calendar" aria-label="Calendar">${ic('calendar_month')}</a>` };
 }

@@ -154,13 +154,14 @@ function balancesCard(x, accs) {
   const rows = accs.filter(a => a.type !== 'invest' && a.type !== 'card');
   if (!rows.length) return '';
   return `<div class="card flush"><div class="card-title" style="padding:4px 16px 0">${ic('account_balance_wallet')}<span style="flex:1">Where the money is</span><a class="btn text sm" href="#/accounts">All accounts</a></div>
+    <p class="muted" style="font-size:13px;margin:0 16px 4px">Tap <b>Check</b> after counting your cash or looking at the bank app – Exsy fixes any difference.</p>
     ${rows.map(a => {
       const v = x.bal.get(a.id) || 0, b = x.book.get(a.bookId);
       return `<div class="li" style="min-height:52px"><a class="li" style="padding:0;border:0;flex:1;min-width:0" href="#/account/${a.id}">
         <span class="avatar" style="--c:${a.type === 'cash' ? '#2e7d5b' : '#2a8f99'}">${ic(ACC_T[a.type]?.icon || 'wallet')}</span>
         <span class="li-text"><span class="li-title">${esc(a.name)}</span><span class="li-sub">${esc(b?.name || '')}${a.checkedOn ? ' · checked ' + fmtDay(a.checkedOn) : ''}</span></span>
         <span class="li-end ${v < 0 ? 'neg' : ''}">${inr(v)}</span></a>
-        <button class="icon-btn" data-act="countBal" data-id="${a.id}" title="${a.type === 'cash' ? 'Count cash' : 'Update balance'}" aria-label="${a.type === 'cash' ? 'Count cash' : 'Update balance'}">${ic(a.type === 'cash' ? 'payments' : 'tune')}</button></div>`;
+        <button class="btn text sm check-btn" data-act="countBal" data-id="${a.id}" aria-label="${a.type === 'cash' ? `Count cash in ${esc(a.name)}` : `Check the balance of ${esc(a.name)}`}">Check</button></div>`;
     }).join('')}</div>`;
 }
 

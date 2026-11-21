@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.16.0';
+const APP_VERSION = '1.17.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -435,8 +435,8 @@ function render() {
 function shell(pg, active) {
   const nav = navItems().map(n => `<a class="nav-item ${n.id === active ? 'on' : ''}" href="#/${n.id}"><span class="pill">${ic(n.icon)}</span><span>${n.label}</span></a>`).join('');
   const sync = (store.kind === 'cloud'
-    ? `<a class="icon-btn hide-sm" href="#/sync" title="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}">${ic(navigator.onLine ? 'cloud_done' : 'cloud_off')}</a>`
-    : `<a class="icon-btn hide-sm" href="#/sync" title="Saved on this device only">${ic('phone_android')}</a>`)
+    ? `<a class="icon-btn hide-sm" href="#/sync" title="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}" aria-label="${navigator.onLine ? 'Synced with cloud' : 'Offline – changes will sync later'}">${ic(navigator.onLine ? 'cloud_done' : 'cloud_off')}</a>`
+    : '')   // this-device-only: no icon (a phone shape was unclear) – Home says "Saved on this phone · turn on sync"
     + `<button class="icon-btn" data-act="search" title="Search" aria-label="Search">${ic('search')}</button>`
     + `<button class="icon-btn" data-act="privacy" title="${privacyOn() ? 'Show amounts' : 'Hide amounts'}" aria-label="${privacyOn() ? 'Show amounts' : 'Hide amounts'}">${ic(privacyOn() ? 'visibility_off' : 'visibility')}</button>`;
   const fabLabel = pg.fabLabel || 'Add entry';
