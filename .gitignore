@@ -6,3 +6,9 @@ marketing/voice/
 node_modules/
 www/
 apk/
+
+# release signing key – never commit (back it up somewhere safe instead)
+keystore.properties
+*.jks
+*.keystore
+android/keystore.properties

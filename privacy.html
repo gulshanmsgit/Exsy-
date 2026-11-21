@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-legal>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Privacy policy – Exsy</title>
+<meta name="description" content="How Exsy, the family money book app, handles your data.">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="legal.css">
+<script src="site-info.js"></script>
+</head>
+<body>
+<main>
+<header><img src="icons/icon-192.png" alt=""><a href="./">Exsy · Money Book</a></header>
+<h1>Privacy policy</h1>
+<p class="muted">Last updated: <span data-info="policyDate"></span></p>
+
+<div class="box">
+  <b>In short:</b> your money book belongs to you. Exsy has no ads, no tracking and no analytics, and never sells or shares your data.
+  If you don’t sign in, everything stays on your phone. If you sign in with Google, your money book is stored in your own private
+  space in Google’s Firebase database, which only your account can open.
+</div>
+
+<h2>Who we are</h2>
+<p>Exsy is made and run by <span data-info="owner"></span> (“we”), India. Contact: <span data-info="email"></span>.</p>
+
+<h2>What Exsy stores, and where</h2>
+<table>
+  <tr><th>Data</th><th>Why</th><th>Where it is kept</th></tr>
+  <tr><td>Your money book: accounts, balances, entries, notes, categories, shops, people you lend to, chits, EMIs, budgets, settings</td>
+      <td>This is the app – to show your balances and reports</td>
+      <td><b>Not signed in:</b> only on your device.<br><b>Signed in with Google:</b> also in Google Cloud Firestore, in a space only your account can read or write.</td></tr>
+  <tr><td>Your Google account’s name, email address, profile photo and account ID</td>
+      <td>To sign you in and keep your money book private to you</td>
+      <td>Google Firebase Authentication</td></tr>
+  <tr><td>A random device ID (older “sync code” devices only)</td>
+      <td>So only signed-in devices can open a sync-code book</td>
+      <td>Google Firebase Authentication</td></tr>
+  <tr><td>Names and phone numbers of people you add (e.g. chit members, people who owe you)</td>
+      <td>To keep track of what they owe and to let you send them a reminder</td>
+      <td>Same as your money book. Exsy never contacts them – reminders are sent only by you, from your own WhatsApp or phone.</td></tr>
+</table>
+
+<h2>What Exsy does not do</h2>
+<ul>
+  <li>No advertising, no analytics, no tracking across apps or websites.</li>
+  <li>We do not sell, rent or share your data with anyone.</li>
+  <li>Exsy does <b>not read your SMS</b> or contacts. When you use “Paste SMS”, only the text you paste or share into Exsy is read, on your device.</li>
+  <li>We do not see your bank or card logins – Exsy never connects to your bank.</li>
+</ul>
+
+<h2>Sharing that you choose</h2>
+<p>PDF statements and reminder messages are made on your device. They leave it only when you share them yourself (for example on WhatsApp).
+Backup files you download are saved where you choose.</p>
+
+<h2>Services Exsy uses</h2>
+<ul>
+  <li><b>Google Firebase</b> (Authentication and Cloud Firestore) – sign-in and storage for signed-in users. Data is encrypted in transit and at rest by Google.
+    <a href="https://firebase.google.com/support/privacy">Firebase privacy</a></li>
+  <li><b>Google Fonts</b> – the app’s letters and icons are downloaded from Google, which sees your device’s IP address.</li>
+  <li><b>Cloudflare (cdnjs)</b> – the PDF maker is downloaded from there the first time you make a PDF.</li>
+  <li><b>GitHub Pages</b> – hosts the Exsy website and these pages.</li>
+  <li><b>Google Play</b> – if you buy Exsy Premium, Google handles the payment. We never see your card or UPI details.</li>
+</ul>
+
+<h2>How long we keep data</h2>
+<p>Your money book is kept until you delete it. When you delete your account, your money book and sign-in account are removed from the
+database straight away; copies in Google’s own internal backups expire after a limited time. Data only on your device is removed when you
+use “Erase everything” or uninstall the app. Android may include app data in your phone’s encrypted backup to your own Google account.</p>
+
+<h2>Your rights</h2>
+<p>You can see, correct, export (More → Download backup / Export CSV) and delete your data at any time inside the app.
+Under India’s Digital Personal Data Protection Act, 2023 you may also ask us to access, correct or erase your data, and raise a grievance,
+by writing to <span data-info="email"></span>. We reply within 30 days.</p>
+<p><b>Delete your account and data:</b> in the app go to More → Account &amp; devices → Delete my account and data, or follow
+<a href="delete-account.html">these steps</a>.</p>
+
+<h2>Security</h2>
+<p>Signed-in money books can only be opened by their own Google account (enforced by the database’s security rules). You can also
+set a PIN lock and hide amounts on screen. No system is perfectly secure, so please keep your phone locked.</p>
+
+<h2>Children</h2>
+<p>Exsy is meant for adults (18+) and is not directed at children.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, we update the date at the top and, for important changes, tell you in the app.</p>
+
+<h2>Contact and grievance officer</h2>
+<p><span data-info="owner"></span> · <span data-info="email"></span></p>
+
+<footer><a href="./">Open Exsy</a><a href="terms.html">Terms of use</a><a href="delete-account.html">Delete account</a></footer>
+</main>
+</body>
+</html>

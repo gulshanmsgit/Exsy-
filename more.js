@@ -100,6 +100,13 @@ function pageMore() {
       ${item('', 'science', 'Add sample data', 'Fill in example entries and a chit to try things out', 'data-act="sample"')}
       ${item('', 'delete_forever', 'Erase everything', 'Delete all books, entries and chits', 'data-act="erase"')}
     </div>
+    <div class="section-head" style="margin-top:16px"><h2>About &amp; help</h2></div>
+    <div class="card flush">
+      ${SITE_INFO.email ? item('', 'mail', 'Contact support', `${esc(SITE_INFO.email)} – questions, ideas, problems`, 'data-act="support"') : ''}
+      ${item('', 'policy', 'Privacy policy', 'What Exsy stores and where – no ads, no tracking', 'data-act="openPage" data-page="privacy.html"')}
+      ${item('', 'gavel', 'Terms of use', 'The rules for using Exsy', 'data-act="openPage" data-page="terms.html"')}
+      ${isAccountMode() ? item('#/sync', 'delete_forever', 'Delete my account and data', 'In Account & devices') : ''}
+    </div>
     <p class="muted" style="margin:16px 4px">Exsy ${APP_VERSION} · ${store.kind === 'cloud' ? 'cloud sync' : 'this device'}</p>`;
   return { title: 'More', body };
 }
@@ -240,6 +247,7 @@ function recurNow(id) {
    ============================================================ */
 function renderWelcome() {
   const hasCfg = !!(FIREBASE_CONFIG || lsGet(LS.cfg, null));
+  if (lsGet('exsy.deleted', 0)) { localStorage.removeItem('exsy.deleted'); setTimeout(() => snack('Your account and all its data were deleted'), 300); }
   app.innerHTML = `<div class="center-screen"><img src="icons/icon-192.png" alt="">
     <h1>Exsy · Money Book</h1>
     <p class="muted" style="text-align:center;max-width:440px">Your cash and bank accounts, your family’s money, people who owe you, EMIs and chits – in one place.</p>
@@ -248,6 +256,7 @@ function renderWelcome() {
       <button class="card choice" data-act="startLocal">${ic('phone_android')}<div><h3>Start on this device</h3><p>Begin right away. You can turn on sync later and everything is copied.</p></div></button>
       ${hasCfg ? `<button class="card choice" data-act="enterCode">${ic('key')}<div><h3>I have a sync code</h3><p>Open the money book you already use on another device.</p></div></button>` : ''}
       <p class="muted" style="text-align:center;font-size:13px">Got a device link? Just open it – you will be signed in automatically.</p>
+      <p class="muted" style="text-align:center;font-size:13px">By using Exsy you agree to the <a href="#" data-act="openPage" data-page="terms.html">terms</a> and <a href="#" data-act="openPage" data-page="privacy.html">privacy policy</a>.</p>
     </div></div>`;
 }
 /* Setup for a new person: pick accounts, features and family members. The choices are kept in setupDraft so a
@@ -544,6 +553,10 @@ const ACT = {
   editHome: () => openHomeEdit(),
   editNav: () => openNavEdit(),
   editFeatures: () => openFeatures(),
+  deleteAccount: () => deleteAccountStart(),
+  // legal pages live on the website (the Android app opens them in the phone's browser)
+  openPage: d => window.open(SITE_INFO.website + d.page, '_blank', 'noopener'),
+  support: () => { location.href = `mailto:${SITE_INFO.email}?subject=${encodeURIComponent('Exsy ' + APP_VERSION)}`; },
   guideDone: () => { saveFeatures({ guideDone: true }); scheduleRender(); },
   budSave: () => { const v = evalAmount($('#bud-total').value); saveBudgetPrefs({ total: v > 0 ? v : 0 }); buzz(); snack(v > 0 ? `Monthly budget ${inr(v)}` : 'Monthly budget removed'); },
   budScope: d => saveBudgetPrefs({ scope: d.b }),
