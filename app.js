@@ -6,7 +6,7 @@
 /* ============================================================
    Config
    ============================================================ */
-const APP_VERSION = '1.15.0';
+const APP_VERSION = '1.16.0';
 const FIREBASE_VERSION = '10.12.2';
 // Exsy's own Firebase project (exsy-591a1). Data lives under FIRESTORE_ROOT/{syncCode}/…
 const FIREBASE_CONFIG = {
@@ -309,6 +309,21 @@ function accLabel(id, x) {
   const b = x.book.get(a.bookId);
   return b && !b.primary ? `${b.name} · ${a.name}` : a.name;
 }
+/* Date fields: phones show dates in the phone's own format (often American: 11/20/2026). Exsy shows
+   "20 Nov 2026" on top of every date field instead; tapping still opens the phone's date picker. */
+const niceDate = v => v ? new Date(v + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Pick a date';
+function dressDate(inp) {
+  inp.dataset.nice = '1';
+  const wrap = document.createElement('span'), show = document.createElement('span');
+  wrap.className = 'date-wrap'; show.className = 'date-show'; show.setAttribute('aria-hidden', 'true');
+  inp.replaceWith(wrap); wrap.append(inp, show);
+  const upd = () => { show.textContent = niceDate(inp.value); show.classList.toggle('empty', !inp.value); };
+  inp.addEventListener('input', upd); inp.addEventListener('change', upd); upd();
+}
+new MutationObserver(() => document.querySelectorAll('input[type=date]:not([data-nice])').forEach(dressDate))
+  .observe(document.body, { childList: true, subtree: true });
+// payment mode, unless the account name already says it ("Card" + "Credit card", "Cash" + "Cash")
+const modeIfNew = (mode, accName) => mode && !String(accName || '').toLowerCase().includes(String(mode).toLowerCase()) ? mode : '';
 function forWhomLabel(t, x) {
   if (t.type !== 'expense' || !t.forWhom) return '';
   if (t.forWhom === 'home') return 'for Home';

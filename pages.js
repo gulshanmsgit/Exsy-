@@ -32,7 +32,8 @@ function renderEntry(f) {
     ${sheetHead(editing ? 'Edit entry' : 'New entry', editing ? `<button type="button" class="icon-btn" id="ef-del" aria-label="Delete">${ic('delete')}</button>`
       : `<button type="button" class="btn text sm" id="ef-paste" title="Fill from a bank SMS or UPI message">${ic('content_paste')}Paste SMS</button>`)}
     ${f.pasteInfo ? `<div class="banner info">${ic('auto_awesome')}<div>Read from the message: ${esc(f.pasteInfo)}. Check and Save.</div></div>` : ''}
-    <div class="chips scroll">${types.map(t => chip('type', t, TT[t].label, t === ty, TT[t].icon)).join('')}</div>
+    <div class="chips">${types.filter(t => !PERSON_T.has(t)).map(t => chip('type', t, TT[t].label, t === ty, TT[t].icon)).join('')}</div>
+    ${types.some(t => PERSON_T.has(t)) ? `<div class="chips type-lend">${types.filter(t => PERSON_T.has(t)).map(t => chip('type', t, TT[t].label, t === ty)).join('')}</div>` : ''}
     <label class="amount-field"><b>₹</b><input id="ef-amount" name="amount" inputmode="decimal" placeholder="0" value="${esc(f.amount ?? '')}" aria-label="Amount"></label>
     <div class="amount-hint" id="ef-hint">You can type sums like 250+120</div>
     ${PERSON_T.has(ty) ? `<div class="form-label">${ty === 'lend' ? 'Lent to' : ty === 'collect' ? 'Got back from' : ty === 'borrow' ? 'Borrowed from' : 'Repaid to'}</div>
@@ -540,15 +541,17 @@ function pagePerson(id) {
       <button class="act" data-act="addEntry" data-type="collect" data-person="${id}">${ic('south_west')}Got back</button>
       <button class="act" data-act="addEntry" data-type="borrow" data-person="${id}">${ic('south_west')}Borrowed</button>
       <button class="act" data-act="addEntry" data-type="repay" data-person="${id}">${ic('north_east')}Repaid</button>
-      ${bal > 0 ? `<button class="act" data-act="sharePerson" data-id="${id}">${ic('chat')}Remind</button>` : ''}
-      <button class="act" data-act="sharePerson" data-id="${id}">${ic('picture_as_pdf')}Statement</button>
-      ${p.phone ? `<a class="act" href="tel:${esc(p.phone)}">${ic('call')}Call</a>` : ''}
-      <button class="act" data-act="editPerson" data-id="${id}">${ic('edit')}Edit</button>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      ${bal > 0 ? `<button class="btn tonal sm" data-act="sharePerson" data-id="${id}">${ic('chat')}Remind</button>` : ''}
+      <button class="btn tonal sm" data-act="sharePerson" data-id="${id}">${ic('picture_as_pdf')}Statement</button>
+      ${p.phone ? `<a class="btn tonal sm" href="tel:${esc(p.phone)}">${ic('call')}Call</a>` : ''}
+      <button class="btn tonal sm" data-act="editPerson" data-id="${id}">${ic('edit')}Edit</button>
     </div>
     <div class="card flush" style="margin-top:12px">
       ${rows.map(({ t, run }) => `<button class="li" data-act="editEntry" data-id="${t.id}"><span class="avatar" style="--c:${t.type === 'lend' || t.type === 'repay' ? '#c8742a' : '#2e7d5b'}">${ic(TT[t.type].icon)}</span>
         <span class="li-text"><span class="li-title">${TT[t.type].label} ${inr(t.amount)} ${t.type === 'lend' && t.dueDate ? `<span class="tag ${t.dueDate < today() && bal > 0 ? 'bad' : ''}">by ${fmtDay(t.dueDate)}</span>` : ''}</span>
-        <span class="li-sub">${esc([fmtDate(t.date), t.mode, accLabel(t.accountId, x), t.note].filter(Boolean).join(' · '))}</span></span>
+        <span class="li-sub">${esc([fmtDate(t.date), modeIfNew(t.mode, accLabel(t.accountId, x)), accLabel(t.accountId, x), t.note].filter(Boolean).join(' · '))}</span></span>
         <span class="li-end"><small>balance</small>${run >= 0 ? inr(run) : inrAbs(run) + ' (you owe)'}</span></button>`).join('')}
       ${num(p.opening) ? `<div class="li static"><span class="avatar">${ic('info')}</span><span class="li-text"><span class="li-title">Opening balance</span><span class="li-sub">Before using Exsy</span></span><span class="li-end">${inr(p.opening)}</span></div>` : ''}
       ${!rows.length && !num(p.opening) ? `<div class="empty">No entries with ${esc(p.name)} yet</div>` : ''}

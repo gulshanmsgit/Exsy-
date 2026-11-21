@@ -670,7 +670,8 @@ window.addEventListener('hashchange', () => { if (sheetOpen) closeSheet(true); r
 let lastY = 0;
 window.addEventListener('scroll', () => {
   const y = window.scrollY, fab = document.querySelector('.fab');
-  if (fab) fab.classList.toggle('away', y > lastY + 4 && y > 80 ? true : y < lastY - 4 || y < 80 ? false : fab.classList.contains('away'));
+  // hides as soon as you scroll down (so it never sits on the row you are reading); back on scroll up or at the top
+  if (fab) fab.classList.toggle('away', y > lastY + 2 && y > 16 ? true : y < lastY - 6 || y <= 16 ? false : fab.classList.contains('away'));
   lastY = y;
 }, { passive: true });
 window.addEventListener('online', scheduleRender);
